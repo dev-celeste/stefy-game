@@ -28,22 +28,50 @@
       border: 4px solid #000;    /* chunky retro border */
       padding: 20px;             /* breathing room inside the box */
     }
+
+    /* The paragraph where a scene's words appear. */
+    #text {
+      font-size: 18px;           /* comfortable reading size */
+      line-height: 1.6;          /* space between lines so it's not cramped */
+    }
   </style>
 </head>
 
 <body>
   <!-- ---- HTML: the STRUCTURE ---- -->
-  <!-- One empty box. JavaScript will fill it with the game. -->
-  <div id="game"></div>
+  <!-- The game box, now with a dedicated paragraph inside for scene text. -->
+  <div id="game">
+    <p id="text"></p>
+  </div>
 
   <script>
     /* ---- JavaScript: the BEHAVIOR ---- */
 
-    // Find the #game box in the HTML so we can control it from code.
-    const game = document.getElementById("game");
+    // 1) THE DATA: our story is a plain object. Each KEY is a scene's id
+    //    ("start", "kitchen"...), and each VALUE is an object describing that scene.
+    //    For now a scene only has one property, `text`. We'll add more later.
+    const STORY = {
+      start: {
+        text: "Sunlight leaks through the blinds. Somewhere nearby, a radio is playing 106.9 M&S. It's going to be a big day."
+      },
+      kitchen: {
+        text: "In the kitchen, Penny the tabby weaves between your ankles, meowing for breakfast. The coffee maker gurgles."
+      }
+    };
 
-    // Prove all three layers are wired together by putting text on screen.
-    game.textContent = "106.9 Presents: Stefan's Big Day — skeleton is alive!";
+    // 2) THE LOGIC: find the paragraph once, and keep a reference to it.
+    const textEl = document.getElementById("text");
+
+    // 3) THE ENGINE: one function that can display ANY scene we hand it by id.
+    //    Look the scene up in STORY, then drop its text into the paragraph.
+    function showScene(id) {
+      const scene = STORY[id];        // grab the scene object for this id
+      textEl.textContent = scene.text; // put its words on screen
+    }
+
+    // 4) KICK IT OFF: show the first scene. Change "start" to "kitchen" to
+    //    prove the same function can render a different scene from the same data.
+    showScene("start");
   </script>
 </body>
 </html>
