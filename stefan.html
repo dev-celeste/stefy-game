@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>106.9 Presents: Stefan's Big Day</title>
+
+  <style>
+    /* ---- CSS: how things LOOK ---- */
+
+    /* The whole page: dark background, and center the game box in the middle. */
+    body {
+      margin: 0;                 /* remove the browser's default page gap */
+      height: 100vh;             /* make body as tall as the screen (100% of viewport height) */
+      display: flex;             /* turn body into a flex container so we can center its child */
+      align-items: center;       /* center vertically */
+      justify-content: center;   /* center horizontally */
+      background: #0a0810;        /* near-black backdrop */
+      font-family: "Courier New", monospace; /* blocky, retro-feeling text */
+    }
+
+    /* The game "screen": a fixed-size window that everything will live inside. */
+    #game {
+      width: 640px;
+      height: 480px;
+      background: #141018;        /* dark panel color */
+      color: #f4f1e8;            /* off-white text */
+      border: 4px solid #000;    /* chunky retro border */
+      padding: 20px;             /* breathing room inside the box */
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ---- HTML: the STRUCTURE ---- -->
+  <!-- One empty box. JavaScript will fill it with the game. -->
+  <div id="game"></div>
+
+  <script>
+    /* ---- JavaScript: the BEHAVIOR ---- */
+
+    // Find the #game box in the HTML so we can control it from code.
+    const game = document.getElementById("game");
+
+    // Prove all three layers are wired together by putting text on screen.
+    game.textContent = "106.9 Presents: Stefan's Big Day — skeleton is alive!";
+  </script>
+</body>
+</html>
