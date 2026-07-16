@@ -38,6 +38,7 @@
     #text {
       font-size: 18px;           /* comfortable reading size */
       line-height: 1.6;          /* space between lines so it's not cramped */
+      min-height: 90px;          /* reserve room so buttons don't jump as text types in */
     }
 
     /* The container that holds the choice buttons, stacked in a column. */
@@ -70,8 +71,7 @@
 
 <body>
   <!-- ---- HTML: the STRUCTURE ---- -->
-  <!-- The game box now holds TWO things: the scene text, and a choices area
-       that we'll fill with buttons from JavaScript. -->
+  <!-- The game box holds the scene text and a choices area we fill from JS. -->
   <div id="game">
     <p id="text"></p>
     <div id="choices"></div>
@@ -80,9 +80,7 @@
   <script>
     /* ---- JavaScript: the BEHAVIOR ---- */
 
-    // 1) THE DATA: each scene now also has a `choices` array. Every choice is an
-    //    object with a `label` (what the button says) and a `next` (the id of the
-    //    scene to jump to when it's clicked). An empty array means "no choices."
+    // 1) THE DATA: scenes have `text` plus a `choices` array (label + next id).
     const STORY = {
       start: {
         text: "Sunlight leaks through the blinds. Somewhere nearby, a radio is playing 106.9 M&S. It's going to be a big day.",
@@ -113,31 +111,51 @@
     const textEl    = document.getElementById("text");
     const choicesEl = document.getElementById("choices");
 
-    // 3) BUILD THE BUTTONS: given a scene, draw one button per choice.
+    // A place to remember the running typewriter timer so we can stop it if the
+    // player moves to a new scene before the current text finishes typing.
+    let typeTimer = null;
+
+    // 3) THE TYPEWRITER: reveal `text` one character at a time. When the last
+    //    character lands, call `onDone` (a function we hand it to run afterward).
+    function typeText(text, onDone) {
+      clearInterval(typeTimer);   // cancel any reveal still in progress
+      textEl.textContent = "";    // start from an empty line
+      let i = 0;                  // which character we're up to
+
+      typeTimer = setInterval(function () {   // run this repeatedly, on a timer...
+        textEl.textContent += text[i];        // add the next character
+        i++;                                  // advance to the following one
+        if (i >= text.length) {               // reached the end of the string?
+          clearInterval(typeTimer);           // stop the timer
+          onDone();                           // ...and run the "after typing" job
+        }
+      }, 28);                     // 28 milliseconds between characters (typing speed)
+    }
+
+    // 4) BUILD THE BUTTONS: given a scene, draw one button per choice.
     function showChoices(scene) {
-      choicesEl.innerHTML = "";                 // clear out any buttons from the previous scene
-
-      scene.choices.forEach(function (choice) { // for each choice in this scene...
-        const btn = document.createElement("button");  // make a fresh <button>
-        btn.className   = "choice";             // give it our button styling
-        btn.textContent = choice.label;         // label it with the choice text
-
-        btn.addEventListener("click", function () { // when clicked...
-          showScene(choice.next);               // ...jump to the scene it points to
+      choicesEl.innerHTML = "";                 // clear out any buttons from before
+      scene.choices.forEach(function (choice) {
+        const btn = document.createElement("button");
+        btn.className   = "choice";
+        btn.textContent = choice.label;
+        btn.addEventListener("click", function () {
+          showScene(choice.next);
         });
-
-        choicesEl.appendChild(btn);             // put the finished button on screen
+        choicesEl.appendChild(btn);
       });
     }
 
-    // 4) THE ENGINE: show a scene = render its text AND its choice buttons.
+    // 5) THE ENGINE: show a scene = type its text, THEN reveal its choices.
     function showScene(id) {
-      const scene = STORY[id];          // look up the scene by id
-      textEl.textContent = scene.text;  // draw the words
-      showChoices(scene);               // draw the buttons
+      const scene = STORY[id];
+      choicesEl.innerHTML = "";                 // hide old choices while new text types
+      typeText(scene.text, function () {        // when typing finishes...
+        showChoices(scene);                     // ...show this scene's choices
+      });
     }
 
-    // 5) KICK IT OFF: start the story at the beginning.
+    // 6) KICK IT OFF: start the story at the beginning.
     showScene("start");
   </script>
 </body>
