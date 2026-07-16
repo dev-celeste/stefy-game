@@ -32,6 +32,7 @@
       box-sizing: border-box;    /* count the padding + border INSIDE the 640x480, not on top */
       transform: scale(1.25);    /* zoom the whole screen to 125% (visually ~800x600) */
       transform-origin: center;  /* grow outward from the middle so it stays centered */
+      cursor: pointer;           /* hint that the screen itself is clickable (to skip typing) */
     }
 
     /* The paragraph where a scene's words appear. */
@@ -107,55 +108,76 @@
       }
     };
 
-    // 2) THE LOGIC: grab the two areas we'll be updating, once.
+    // 2) THE LOGIC: grab the areas we'll be updating, once.
+    const gameEl    = document.getElementById("game");
     const textEl    = document.getElementById("text");
     const choicesEl = document.getElementById("choices");
 
-    // A place to remember the running typewriter timer so we can stop it if the
-    // player moves to a new scene before the current text finishes typing.
-    let typeTimer = null;
+    // Typewriter state we need to remember between calls:
+    let typeTimer     = null;   // the running reveal timer
+    let isTyping      = false;  // are we mid-reveal right now?
+    let currentText   = "";     // the full text of the scene being typed
+    let currentOnDone = null;   // the "after typing" job to run when it's done
 
-    // 3) THE TYPEWRITER: reveal `text` one character at a time. When the last
-    //    character lands, call `onDone` (a function we hand it to run afterward).
+    // 3) THE TYPEWRITER: reveal `text` one character at a time.
     function typeText(text, onDone) {
       clearInterval(typeTimer);   // cancel any reveal still in progress
       textEl.textContent = "";    // start from an empty line
+      currentText   = text;       // remember the full text (so we can skip to it)
+      currentOnDone = onDone;     // remember the job to run when finished
+      isTyping      = true;       // we are now mid-reveal
       let i = 0;                  // which character we're up to
 
-      typeTimer = setInterval(function () {   // run this repeatedly, on a timer...
-        textEl.textContent += text[i];        // add the next character
-        i++;                                  // advance to the following one
-        if (i >= text.length) {               // reached the end of the string?
-          clearInterval(typeTimer);           // stop the timer
-          onDone();                           // ...and run the "after typing" job
+      typeTimer = setInterval(function () {
+        textEl.textContent += text[i];    // add the next character
+        i++;
+        if (i >= text.length) {           // reached the end?
+          finishTyping();                 // wrap up (stop timer, run onDone)
         }
-      }, 28);                     // 28 milliseconds between characters (typing speed)
+      }, 28);                     // 28 ms between characters (typing speed)
     }
 
-    // 4) BUILD THE BUTTONS: given a scene, draw one button per choice.
+    // 4) SKIP / FINISH: instantly complete the current reveal. Called either
+    //    naturally when typing reaches the end, OR early when the player clicks.
+    function finishTyping() {
+      if (!isTyping) return;            // nothing is typing? do nothing.
+      clearInterval(typeTimer);         // stop the character-by-character timer
+      textEl.textContent = currentText; // snap the full text onscreen at once
+      isTyping = false;                 // we're no longer mid-reveal
+      currentOnDone();                  // run the "after typing" job (show choices)
+    }
+
+    // 5) BUILD THE BUTTONS: given a scene, draw one button per choice.
     function showChoices(scene) {
-      choicesEl.innerHTML = "";                 // clear out any buttons from before
+      choicesEl.innerHTML = "";
       scene.choices.forEach(function (choice) {
         const btn = document.createElement("button");
         btn.className   = "choice";
         btn.textContent = choice.label;
-        btn.addEventListener("click", function () {
+        btn.addEventListener("click", function (ev) {
+          ev.stopPropagation();   // don't let this click bubble up to the skip handler
           showScene(choice.next);
         });
         choicesEl.appendChild(btn);
       });
     }
 
-    // 5) THE ENGINE: show a scene = type its text, THEN reveal its choices.
+    // 6) THE ENGINE: show a scene = type its text, THEN reveal its choices.
     function showScene(id) {
       const scene = STORY[id];
-      choicesEl.innerHTML = "";                 // hide old choices while new text types
-      typeText(scene.text, function () {        // when typing finishes...
-        showChoices(scene);                     // ...show this scene's choices
+      choicesEl.innerHTML = "";
+      typeText(scene.text, function () {
+        showChoices(scene);
       });
     }
 
-    // 6) KICK IT OFF: start the story at the beginning.
+    // 7) CLICK-TO-SKIP: clicking anywhere on the screen while text is typing
+    //    jumps straight to the full text. (If nothing's typing, this does nothing.)
+    gameEl.addEventListener("click", function () {
+      if (isTyping) finishTyping();
+    });
+
+    // 8) KICK IT OFF: start the story at the beginning.
     showScene("start");
   </script>
 </body>
