@@ -19,7 +19,9 @@
       font-family: "Courier New", monospace; /* blocky, retro-feeling text */
     }
 
-    /* The game "screen": a fixed-size window that everything will live inside. */
+    /* The game "screen": a fixed-size window that everything will live inside.
+       We keep the INTERNAL size at 640x480 (the whole build assumes those numbers),
+       then use transform: scale() to just visually magnify the entire box. */
     #game {
       width: 640px;
       height: 480px;
@@ -27,6 +29,9 @@
       color: #f4f1e8;            /* off-white text */
       border: 4px solid #000;    /* chunky retro border */
       padding: 20px;             /* breathing room inside the box */
+      box-sizing: border-box;    /* count the padding + border INSIDE the 640x480, not on top */
+      transform: scale(1.25);    /* zoom the whole screen to 125% (visually ~800x600) */
+      transform-origin: center;  /* grow outward from the middle so it stays centered */
     }
 
     /* The paragraph where a scene's words appear. */
@@ -34,43 +39,105 @@
       font-size: 18px;           /* comfortable reading size */
       line-height: 1.6;          /* space between lines so it's not cramped */
     }
+
+    /* The container that holds the choice buttons, stacked in a column. */
+    #choices {
+      margin-top: 24px;          /* gap between the story text and the choices */
+      display: flex;
+      flex-direction: column;    /* stack buttons vertically instead of side by side */
+      gap: 10px;                 /* even spacing between each button */
+    }
+
+    /* Each individual choice button. */
+    .choice {
+      font-family: inherit;      /* use the same monospace font as everything else */
+      font-size: 16px;
+      text-align: left;          /* text starts at the left edge, like a menu */
+      padding: 10px 14px;
+      background: #241c30;        /* slightly lighter than the panel so it stands out */
+      color: #f4f1e8;
+      border: 2px solid #4a3d63;
+      cursor: pointer;           /* show a hand pointer so it reads as clickable */
+    }
+
+    /* A subtle highlight when the mouse is over a button. */
+    .choice:hover {
+      background: #3a2f4d;
+      border-color: #8a74c0;
+    }
   </style>
 </head>
 
 <body>
   <!-- ---- HTML: the STRUCTURE ---- -->
-  <!-- The game box, now with a dedicated paragraph inside for scene text. -->
+  <!-- The game box now holds TWO things: the scene text, and a choices area
+       that we'll fill with buttons from JavaScript. -->
   <div id="game">
     <p id="text"></p>
+    <div id="choices"></div>
   </div>
 
   <script>
     /* ---- JavaScript: the BEHAVIOR ---- */
 
-    // 1) THE DATA: our story is a plain object. Each KEY is a scene's id
-    //    ("start", "kitchen"...), and each VALUE is an object describing that scene.
-    //    For now a scene only has one property, `text`. We'll add more later.
+    // 1) THE DATA: each scene now also has a `choices` array. Every choice is an
+    //    object with a `label` (what the button says) and a `next` (the id of the
+    //    scene to jump to when it's clicked). An empty array means "no choices."
     const STORY = {
       start: {
-        text: "Sunlight leaks through the blinds. Somewhere nearby, a radio is playing 106.9 M&S. It's going to be a big day."
+        text: "Sunlight leaks through the blinds. Somewhere nearby, a radio is playing 106.9 M&S. It's going to be a big day.",
+        choices: [
+          { label: "Get out of bed", next: "kitchen" }
+        ]
       },
       kitchen: {
-        text: "In the kitchen, Penny the tabby weaves between your ankles, meowing for breakfast. The coffee maker gurgles."
+        text: "In the kitchen, Penny the tabby weaves between your ankles, meowing for breakfast. The coffee maker sits ready.",
+        choices: [
+          { label: "Pour a cup of coffee", next: "coffee" },
+          { label: "Feed Penny first",     next: "penny"  }
+        ]
+      },
+      coffee: {
+        text: "You pour a cup. The first sip hits just right. Penny glares at you, deeply betrayed.",
+        choices: [
+          { label: "Okay, okay — feed the cat", next: "penny" }
+        ]
+      },
+      penny: {
+        text: "Penny devours his breakfast in about four seconds, then struts off like he owns the place. Big day ahead.",
+        choices: []  // a dead end for now — Stage 6 will continue the real story here
       }
     };
 
-    // 2) THE LOGIC: find the paragraph once, and keep a reference to it.
-    const textEl = document.getElementById("text");
+    // 2) THE LOGIC: grab the two areas we'll be updating, once.
+    const textEl    = document.getElementById("text");
+    const choicesEl = document.getElementById("choices");
 
-    // 3) THE ENGINE: one function that can display ANY scene we hand it by id.
-    //    Look the scene up in STORY, then drop its text into the paragraph.
-    function showScene(id) {
-      const scene = STORY[id];        // grab the scene object for this id
-      textEl.textContent = scene.text; // put its words on screen
+    // 3) BUILD THE BUTTONS: given a scene, draw one button per choice.
+    function showChoices(scene) {
+      choicesEl.innerHTML = "";                 // clear out any buttons from the previous scene
+
+      scene.choices.forEach(function (choice) { // for each choice in this scene...
+        const btn = document.createElement("button");  // make a fresh <button>
+        btn.className   = "choice";             // give it our button styling
+        btn.textContent = choice.label;         // label it with the choice text
+
+        btn.addEventListener("click", function () { // when clicked...
+          showScene(choice.next);               // ...jump to the scene it points to
+        });
+
+        choicesEl.appendChild(btn);             // put the finished button on screen
+      });
     }
 
-    // 4) KICK IT OFF: show the first scene. Change "start" to "kitchen" to
-    //    prove the same function can render a different scene from the same data.
+    // 4) THE ENGINE: show a scene = render its text AND its choice buttons.
+    function showScene(id) {
+      const scene = STORY[id];          // look up the scene by id
+      textEl.textContent = scene.text;  // draw the words
+      showChoices(scene);               // draw the buttons
+    }
+
+    // 5) KICK IT OFF: start the story at the beginning.
     showScene("start");
   </script>
 </body>
