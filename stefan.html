@@ -19,50 +19,101 @@
       font-family: "Courier New", monospace; /* blocky, retro-feeling text */
     }
 
-    /* The game "screen": a fixed-size window that everything will live inside.
-       We keep the INTERNAL size at 640x480 (the whole build assumes those numbers),
-       then use transform: scale() to just visually magnify the entire box. */
+    /* The game "screen": a fixed-size window. We keep the INTERNAL size at
+       640x480 and use transform: scale() to visually magnify the whole box.
+       It's now a vertical stack: the art stage on top, the textbox below. */
     #game {
       width: 640px;
       height: 480px;
-      background: #141018;        /* dark panel color */
-      color: #f4f1e8;            /* off-white text */
-      border: 4px solid #000;    /* chunky retro border */
-      padding: 20px;             /* breathing room inside the box */
-      box-sizing: border-box;    /* count the padding + border INSIDE the 640x480, not on top */
-      transform: scale(1.25);    /* zoom the whole screen to 125% (visually ~800x600) */
-      transform-origin: center;  /* grow outward from the middle so it stays centered */
-      cursor: pointer;           /* hint that the screen itself is clickable (to skip typing) */
+      background: #141018;
+      color: #f4f1e8;
+      border: 4px solid #000;
+      box-sizing: border-box;
+      transform: scale(1.25);
+      transform-origin: center;
+      cursor: pointer;           /* hint that the screen is clickable (to skip typing) */
+      display: flex;             /* stack the art stage and textbox vertically */
+      flex-direction: column;
+      overflow: hidden;          /* clip anything that spills past the border */
+    }
+
+    /* THE ART STAGE: the top region that holds the background and characters.
+       `position: relative` makes it the anchor that the layers inside align to. */
+    #stage {
+      position: relative;
+      height: 250px;             /* how tall the visual area is */
+      width: 100%;
+      image-rendering: pixelated; /* keep future pixel art crisp, not blurred, when scaled */
+    }
+
+    /* BACKGROUND LAYER: fills the whole stage, sits at the back. */
+    #bg {
+      position: absolute;
+      inset: 0;                  /* shorthand for top/right/bottom/left = 0 (fill the parent) */
+      background: #000;          /* replaced per-scene from JS */
+    }
+
+    /* CHARACTER LAYER: sits ON TOP of the background, holds the character blocks
+       lined up along the bottom, centered. */
+    #chars {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;     /* stand the characters on the "floor" (bottom) */
+      justify-content: center;   /* center them horizontally */
+      gap: 24px;                 /* space between characters */
+      padding-bottom: 12px;
+    }
+
+    /* A single character placeholder: a labeled colored block. Later, each of
+       these becomes a slot for a Procreate PNG (swap the background for an image). */
+    .char {
+      width: 88px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+      color: #000;
+      border: 2px solid rgba(0,0,0,0.45);
+      image-rendering: pixelated;
+    }
+
+    /* THE TEXTBOX: the bottom region with the story text and choice buttons. */
+    #textbox {
+      flex: 1;                   /* take up all the leftover height under the stage */
+      padding: 18px 20px;
+      overflow: auto;            /* if content is tall, scroll instead of spilling */
     }
 
     /* The paragraph where a scene's words appear. */
     #text {
-      font-size: 18px;           /* comfortable reading size */
-      line-height: 1.6;          /* space between lines so it's not cramped */
-      min-height: 90px;          /* reserve room so buttons don't jump as text types in */
+      font-size: 17px;
+      line-height: 1.6;
+      min-height: 78px;          /* reserve room so buttons don't jump as text types in */
     }
 
     /* The container that holds the choice buttons, stacked in a column. */
     #choices {
-      margin-top: 24px;          /* gap between the story text and the choices */
+      margin-top: 16px;
       display: flex;
-      flex-direction: column;    /* stack buttons vertically instead of side by side */
-      gap: 10px;                 /* even spacing between each button */
+      flex-direction: column;
+      gap: 10px;
     }
 
     /* Each individual choice button. */
     .choice {
-      font-family: inherit;      /* use the same monospace font as everything else */
+      font-family: inherit;
       font-size: 16px;
-      text-align: left;          /* text starts at the left edge, like a menu */
+      text-align: left;
       padding: 10px 14px;
-      background: #241c30;        /* slightly lighter than the panel so it stands out */
+      background: #241c30;
       color: #f4f1e8;
       border: 2px solid #4a3d63;
-      cursor: pointer;           /* show a hand pointer so it reads as clickable */
+      cursor: pointer;
     }
 
-    /* A subtle highlight when the mouse is over a button. */
     .choice:hover {
       background: #3a2f4d;
       border-color: #8a74c0;
@@ -72,24 +123,48 @@
 
 <body>
   <!-- ---- HTML: the STRUCTURE ---- -->
-  <!-- The game box holds the scene text and a choices area we fill from JS. -->
+  <!-- The game is now two stacked regions:
+       #stage (art: #bg behind, #chars in front) on top, #textbox below. -->
   <div id="game">
-    <p id="text"></p>
-    <div id="choices"></div>
+    <div id="stage">
+      <div id="bg"></div>
+      <div id="chars"></div>
+    </div>
+    <div id="textbox">
+      <p id="text"></p>
+      <div id="choices"></div>
+    </div>
   </div>
 
   <script>
     /* ---- JavaScript: the BEHAVIOR ---- */
 
-    // 1) THE DATA: scenes have `text` plus a `choices` array (label + next id).
+    // 0) ART PALETTES: names -> looks. Keeping these in their own tables means a
+    //    scene just refers to art by NAME ("bedroom", "stefan"), and we decide
+    //    here what that name looks like. Later, swap a color for an image URL.
+    const BG = {
+      bedroom: "#2a2140",   // dim purple morning light
+      kitchen: "#3a2e1e"    // warm brown kitchen
+    };
+
+    const CHAR = {
+      stefan: { color: "#d9c27a", label: "STEFAN" },
+      penny:  { color: "#c9873f", label: "PENNY (cat)" }
+    };
+
+    // 1) THE DATA: scenes now also name a `bg` and list which `chars` are onscreen.
     const STORY = {
       start: {
+        bg: "bedroom",
+        chars: ["stefan"],
         text: "Sunlight leaks through the blinds. Somewhere nearby, a radio is playing 106.9 M&S. It's going to be a big day.",
         choices: [
           { label: "Get out of bed", next: "kitchen" }
         ]
       },
       kitchen: {
+        bg: "kitchen",
+        chars: ["stefan", "penny"],
         text: "In the kitchen, Penny the tabby weaves between your ankles, meowing for breakfast. The coffee maker sits ready.",
         choices: [
           { label: "Pour a cup of coffee", next: "coffee" },
@@ -97,57 +172,77 @@
         ]
       },
       coffee: {
-        text: "You pour a cup. The first sip hits just right. Penny glares at you, deeply betrayed.",
+        bg: "kitchen",
+        chars: ["stefan"],
+        text: "You pour a cup. The first sip hits just right. Penny glares at you from the doorway, deeply betrayed.",
         choices: [
           { label: "Okay, okay — feed the cat", next: "penny" }
         ]
       },
       penny: {
+        bg: "kitchen",
+        chars: ["stefan", "penny"],
         text: "Penny devours his breakfast in about four seconds, then struts off like he owns the place. Big day ahead.",
-        choices: []  // a dead end for now — Stage 6 will continue the real story here
+        choices: []  // a dead end for now — Stage 7+ will continue the real story here
       }
     };
 
     // 2) THE LOGIC: grab the areas we'll be updating, once.
     const gameEl    = document.getElementById("game");
+    const bgEl      = document.getElementById("bg");
+    const charsEl   = document.getElementById("chars");
     const textEl    = document.getElementById("text");
     const choicesEl = document.getElementById("choices");
 
     // Typewriter state we need to remember between calls:
-    let typeTimer     = null;   // the running reveal timer
-    let isTyping      = false;  // are we mid-reveal right now?
-    let currentText   = "";     // the full text of the scene being typed
-    let currentOnDone = null;   // the "after typing" job to run when it's done
+    let typeTimer     = null;
+    let isTyping      = false;
+    let currentText   = "";
+    let currentOnDone = null;
 
-    // 3) THE TYPEWRITER: reveal `text` one character at a time.
+    // 3) DRAW THE ART: paint the background and lay out the character blocks.
+    function showArt(scene) {
+      bgEl.style.background = BG[scene.bg];   // look up the bg color by name and paint it
+
+      charsEl.innerHTML = "";                 // clear characters from the previous scene
+      scene.chars.forEach(function (name) {   // for each character named in this scene...
+        const info = CHAR[name];              // look up its color + label
+        const block = document.createElement("div");
+        block.className = "char";
+        block.style.background = info.color;   // the placeholder's fill (later: an image)
+        block.textContent = info.label;        // label so we can tell who's who for now
+        charsEl.appendChild(block);
+      });
+    }
+
+    // 4) THE TYPEWRITER: reveal `text` one character at a time.
     function typeText(text, onDone) {
-      clearInterval(typeTimer);   // cancel any reveal still in progress
-      textEl.textContent = "";    // start from an empty line
-      currentText   = text;       // remember the full text (so we can skip to it)
-      currentOnDone = onDone;     // remember the job to run when finished
-      isTyping      = true;       // we are now mid-reveal
-      let i = 0;                  // which character we're up to
+      clearInterval(typeTimer);
+      textEl.textContent = "";
+      currentText   = text;
+      currentOnDone = onDone;
+      isTyping      = true;
+      let i = 0;
 
       typeTimer = setInterval(function () {
-        textEl.textContent += text[i];    // add the next character
+        textEl.textContent += text[i];
         i++;
-        if (i >= text.length) {           // reached the end?
-          finishTyping();                 // wrap up (stop timer, run onDone)
+        if (i >= text.length) {
+          finishTyping();
         }
-      }, 28);                     // 28 ms between characters (typing speed)
+      }, 28);
     }
 
-    // 4) SKIP / FINISH: instantly complete the current reveal. Called either
-    //    naturally when typing reaches the end, OR early when the player clicks.
+    // 5) SKIP / FINISH: instantly complete the current reveal.
     function finishTyping() {
-      if (!isTyping) return;            // nothing is typing? do nothing.
-      clearInterval(typeTimer);         // stop the character-by-character timer
-      textEl.textContent = currentText; // snap the full text onscreen at once
-      isTyping = false;                 // we're no longer mid-reveal
-      currentOnDone();                  // run the "after typing" job (show choices)
+      if (!isTyping) return;
+      clearInterval(typeTimer);
+      textEl.textContent = currentText;
+      isTyping = false;
+      currentOnDone();
     }
 
-    // 5) BUILD THE BUTTONS: given a scene, draw one button per choice.
+    // 6) BUILD THE BUTTONS: given a scene, draw one button per choice.
     function showChoices(scene) {
       choicesEl.innerHTML = "";
       scene.choices.forEach(function (choice) {
@@ -155,29 +250,29 @@
         btn.className   = "choice";
         btn.textContent = choice.label;
         btn.addEventListener("click", function (ev) {
-          ev.stopPropagation();   // don't let this click bubble up to the skip handler
+          ev.stopPropagation();
           showScene(choice.next);
         });
         choicesEl.appendChild(btn);
       });
     }
 
-    // 6) THE ENGINE: show a scene = type its text, THEN reveal its choices.
+    // 7) THE ENGINE: show a scene = draw its art, type its text, THEN its choices.
     function showScene(id) {
       const scene = STORY[id];
+      showArt(scene);                       // paint background + characters first
       choicesEl.innerHTML = "";
       typeText(scene.text, function () {
         showChoices(scene);
       });
     }
 
-    // 7) CLICK-TO-SKIP: clicking anywhere on the screen while text is typing
-    //    jumps straight to the full text. (If nothing's typing, this does nothing.)
+    // 8) CLICK-TO-SKIP: clicking the screen while text is typing jumps to full text.
     gameEl.addEventListener("click", function () {
       if (isTyping) finishTyping();
     });
 
-    // 8) KICK IT OFF: start the story at the beginning.
+    // 9) KICK IT OFF: start the story at the beginning.
     showScene("start");
   </script>
 </body>
