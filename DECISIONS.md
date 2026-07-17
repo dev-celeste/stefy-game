@@ -39,6 +39,12 @@
 
 ## Change Log
 
+### 2026-07-17 — Real placeholder sprites + art references (post-feature-complete polish)
+- Replaced the labeled colored blocks with **hand-coded pixel sprites** for all five characters (Stefan, Penny, Maria, Greg, alien) — drawn as 12×16 ASCII maps + a shared `PAL` palette, rendered via the **CSS `box-shadow` single-element trick** (one 8px dot wearing one shadow per lit pixel). No image files, so the game stays a single self-contained HTML. `showArt` uses the sprite when a `px` map exists, else falls back to the old block. Verified: every lit pixel → exactly one shadow, no unknown color codes, all sprites 12×16.
+- Added `docs/Background_Assets_Shortlist.md`: scene-by-scene free/CC0 background sources (Kenney, ansimuz, OpenGameArt) with a license primer and a pragmatic "finish it" plan.
+- Added `docs/css-pixel-art-demo.html`: an interactive teaching page building Stefan three ways (image-rendering / grid-of-divs / box-shadow) — answers Maria's "can you do pixel art in pure CSS?" question and mirrors the technique now in the game.
+- Art-swap path unchanged: when Procreate PNGs are ready, follow `Art_Swap_Guide.md` (sprites can be swapped for `<img>` one at a time).
+
 ### 2026-07-17 — Stage 10: sound (finale) — game feature-complete
 - Built a **Web Audio sound engine** — everything synthesized with oscillators, **no audio files**, so the game stays a single self-contained HTML file.
 - Music: six chiptune loops (cozy / tense / hunt / arcade / win / soft) written in a tiny `seq("C4:2 E4:2 …")` shorthand; scenes carry an optional `music` field and `setMusic` only switches when the mood actually changes (shared-mood scenes don't restart the song).
