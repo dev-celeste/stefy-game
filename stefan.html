@@ -421,8 +421,8 @@
         dj: "That hum you're hearing? Not the HVAC, folks. 106.9's got chills. Somebody check the basement... actually, no, DON'T. *bruh sting*",
         text: "The whine pulls you and Greg down to the boiler room. Behind the water heater, a junction box you've never seen is blinking four little lights in a pattern — the same loop, over and over, like it's calling something. Greg leans in: 'Bro. That is NOT up to code.' If you can echo the pattern back, maybe you can answer whatever's on the other end — or scramble it.",
         choices: [
-          { label: "Echo the pattern back (repeat the sequence)", next: "b1_signal_win" },
-          { label: "Nope — just yank the wires",                  next: "b1_toolup"     }
+          { label: "Echo the pattern back (repeat the sequence)", minigame: { game: "signal", start: 2, target: 5, clear: "b1_signal_win", fail: "b1_signal_fail" } },
+          { label: "Nope — just yank the wires",                  next: "b1_toolup" }
         ]
       },
       b1_signal_win: {
@@ -772,9 +772,10 @@
         btn.addEventListener("click", function (ev) {
           ev.stopPropagation();
           sfx("confirm");                 // little blip so a choice feels clicky
-          if (choice.minigame) {          // this choice launches the DDR minigame...
-            startDDR(choice.minigame);    // ...which routes to clear/fail when done
-          } else {
+          if (choice.minigame) {          // this choice launches a minigame...
+            if (choice.minigame.game === "signal") startSignal(choice.minigame);
+            else                                   startDDR(choice.minigame);
+          } else {                        // ...which routes to clear/fail when done
             showScene(choice.next);       // ...otherwise just move to the next scene
           }
         });
@@ -1006,6 +1007,175 @@
       const cleared = pct >= ddr.chart.clearPct;
       const dest = cleared ? ddr.cfg.clear : ddr.cfg.fail;
       ddr = null;
+      showScene(dest);
+    }
+
+    /* ================= SIGNAL MATCH MINIGAME ================= */
+    // A Simon-style MEMORY game. It reuses the SAME overlay (#ddrWrap) and the
+    // SAME canvas context (ddrCtx) as DDR — we just draw a different screen and
+    // listen for keys differently. The alien junction box blinks a growing
+    // sequence across the four lanes; you echo it back with the arrow keys.
+    // Miss a note = fail; echo a full-length sequence = clear. Different muscle
+    // from DDR: remember the pattern, don't just react to it.
+
+    // Each lane gets its own pitch, so the playback sounds like a real Simon toy.
+    const SIG_FREQ = { left: 330, down: 392, up: 494, right: 587 };
+    const SIG_ON = 420, SIG_OFF = 200, SIG_STEP = SIG_ON + SIG_OFF;  // playback timing (ms)
+
+    // Diamond layout for the four pads (arrows point outward from center).
+    const SIG_POS = { up: [320, 120], left: [180, 235], right: [460, 235], down: [320, 350] };
+
+    let signal = null;   // holds all state for the active game (null when idle)
+
+    function randLane() { return LANES[Math.floor(Math.random() * LANES.length)]; }
+
+    // one pitched blip for a lane (used in playback AND on a correct press)
+    function beep(lane) {
+      if (!actx) return;
+      tone(SIG_FREQ[lane], 0.16, "square", actx.currentTime, master, 0.28);
+    }
+
+    // START: build the first short sequence, show the overlay, listen for keys,
+    // and begin the loop in "watch" mode.
+    function startSignal(cfg) {
+      signal = {
+        cfg: cfg,
+        target: cfg.target || 5,   // clear once you echo a sequence this long
+        seq: [],                   // the pattern to remember (a list of lanes)
+        phase: "watch",            // "watch" = box shows it; "repeat" = you echo it
+        inputIdx: 0,               // how many correct presses so far this round
+        watchStart: performance.now(),
+        lastIdx: -1,               // which playback step we last beeped
+        flash: {},                 // per-lane press glow, like DDR
+        judge: ""                  // little status line
+      };
+      const start = cfg.start || 2;
+      for (let i = 0; i < start; i++) signal.seq.push(randLane());
+      ddrWrap.style.display = "block";
+      window.addEventListener("keydown", signalKey);
+      requestAnimationFrame(signalLoop);
+    }
+
+    // KEY: only matters during "repeat". Compare the pressed lane to the next
+    // note we expect. Right = advance; wrong = fail.
+    function signalKey(e) {
+      if (!signal || signal.phase !== "repeat") return;   // ignore during playback
+      const lane = KEY_LANE[e.key] || KEY_LANE[e.key.toLowerCase()];
+      if (!lane) return;
+      e.preventDefault();
+      signal.flash[lane] = performance.now();
+
+      if (lane === signal.seq[signal.inputIdx]) {          // correct next note
+        beep(lane);
+        signal.inputIdx++;
+        if (signal.inputIdx >= signal.seq.length) {        // echoed the whole round
+          if (signal.seq.length >= signal.target) {         // ...at full length: WIN
+            signal.judge = "LOCKED IN";
+            endSignal(true);
+          } else {                                          // grow it and replay
+            signal.seq.push(randLane());
+            signal.phase = "watch";
+            signal.inputIdx = 0;
+            signal.lastIdx = -1;
+            signal.watchStart = performance.now() + 500;     // brief beat before replay
+            signal.judge = "nice \u2014 one more";
+          }
+        }
+      } else {                                              // wrong note = fail
+        sfx("whiff");
+        signal.judge = "WRONG";
+        endSignal(false);
+      }
+    }
+
+    // LOOP: in "watch" it steps through the sequence, beeping each note once as
+    // it lights; when the sequence is fully shown it hands control to the player.
+    function signalLoop() {
+      if (!signal) return;
+      const now = performance.now();
+
+      if (signal.phase === "watch") {
+        const elapsed = now - signal.watchStart;
+        if (elapsed >= 0) {
+          const idx = Math.floor(elapsed / SIG_STEP);
+          if (idx !== signal.lastIdx) {          // just crossed into a new step
+            signal.lastIdx = idx;
+            if (idx < signal.seq.length) beep(signal.seq[idx]);
+          }
+          if (idx >= signal.seq.length) {        // whole pattern shown -> your turn
+            signal.phase = "repeat";
+            signal.inputIdx = 0;
+          }
+        }
+      }
+
+      drawSignal(now);
+      requestAnimationFrame(signalLoop);
+    }
+
+    // DRAW: paint one frame — title, the four pads (lit during playback or on a
+    // press), and a small progress HUD.
+    function drawSignal(now) {
+      const c = ddrCtx;
+      c.fillStyle = "#0b0a12";
+      c.fillRect(0, 0, 640, 480);
+
+      c.textAlign = "center";
+      c.fillStyle = "#8a74c0";
+      c.font = "16px 'Courier New', monospace";
+      c.fillText("SIGNAL MATCH  \u2014  echo the box's pattern", 320, 40);
+
+      const watching = signal.phase === "watch";
+      c.fillStyle = "#6a5d83";
+      c.font = "13px 'Courier New', monospace";
+      c.fillText(watching ? "WATCH the lights..."
+                          : "YOUR TURN \u2014 repeat it with the ARROW KEYS", 320, 62);
+
+      // which lane, if any, is lit by the playback right now
+      let liveLane = null;
+      if (watching) {
+        const elapsed = now - signal.watchStart;
+        if (elapsed >= 0) {
+          const idx = Math.floor(elapsed / SIG_STEP);
+          if (idx < signal.seq.length && (elapsed % SIG_STEP) < SIG_ON)
+            liveLane = signal.seq[idx];
+        }
+      }
+
+      LANES.forEach(function (lane) {
+        const p = SIG_POS[lane], x = p[0], y = p[1];
+        const pressed = signal.flash[lane] && (now - signal.flash[lane] < 160);
+        const lit = (liveLane === lane) || pressed;
+        c.fillStyle = lit ? LANE_COL[lane] : "#1b1626";
+        c.fillRect(x - 60, y - 50, 120, 100);
+        c.strokeStyle = "#4a3d63";
+        c.lineWidth = 3;
+        c.strokeRect(x - 60, y - 50, 120, 100);
+        c.fillStyle = lit ? "#0b0a12" : "#5a4d73";
+        c.font = "44px monospace";
+        c.fillText(GLYPH[lane], x, y + 15);
+      });
+
+      // HUD: sequence length vs. target, and how many you've echoed this round
+      c.fillStyle = "#f4f1e8";
+      c.font = "16px 'Courier New', monospace";
+      c.textAlign = "left";
+      c.fillText("Length " + signal.seq.length + "/" + signal.target, 22, 456);
+      c.textAlign = "right";
+      c.fillText(signal.inputIdx + " echoed", 618, 456);
+      if (signal.judge) {
+        c.textAlign = "center";
+        c.fillStyle = signal.judge === "WRONG" ? "#c96a6a" : "#d9c27a";
+        c.fillText(signal.judge, 320, 456);
+      }
+    }
+
+    // END: stop listening, hide the overlay, route to the clear/fail scene.
+    function endSignal(cleared) {
+      window.removeEventListener("keydown", signalKey);
+      const dest = cleared ? signal.cfg.clear : signal.cfg.fail;
+      signal = null;
+      ddrWrap.style.display = "none";
       showScene(dest);
     }
 
