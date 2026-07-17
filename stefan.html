@@ -88,6 +88,28 @@
       image-rendering: pixelated;
     }
 
+    /* A pixel-sprite character. The box is exactly the sprite's footprint
+       (12*8 x 16*8). No border/background — it's just a frame for the dot. */
+    .char.sprite {
+      width: 96px;
+      height: 128px;
+      border: none;
+      background: none;
+      position: relative;
+    }
+
+    /* THE DOT: one 8x8 square anchored top-left. Its box-shadow (set in JS)
+       clones it into every lit pixel of the sprite. Shadows don't affect
+       layout, so the whole sprite "floats" out of this single tiny element. */
+    .char.sprite .px {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background: transparent;
+    }
+
     /* THE TEXTBOX: the story text and choice buttons. */
     #textbox {
       flex: 1;
@@ -216,12 +238,52 @@
       stage:        "#0d0d16"   // concert stage
     };
 
+    // PAL: single-letter codes -> the actual pixel colors. The sprite maps below
+    // are just ASCII grids; each letter is looked up here when we paint them.
+    // '.' means "transparent" (no pixel drawn), so the background shows through.
+    const PAL = {
+      s: "#e6be96", e: "#1e1923",                 // skin, eyes
+      H: "#e8c86a", K: "#1a1a1e", k: "#282830",   // stefan: blonde, black shirt/shade
+      B: "#78503a", p: "#c98fb0", j: "#3a3050",   // maria:  brown hair, pink shirt, jeans
+      g: "#4a3a2a", G: "#8fb06a", o: "#3a4a2a",   // greg:   brown hair, green shirt, green pants
+      c: "#c9873f", C: "#965a28", w: "#f0e1cd",   // penny:  orange, orange-shade, cream belly
+      a: "#7de0a0", A: "#5ab478"                  // alien:  green, green-shade
+    };
+
+    // CHAR: each character keeps its old `color`/`label` (the fallback block) AND
+    // now a `px` sprite map — a 12-wide x 16-tall ASCII grid drawn with the PAL
+    // above. showArt uses the sprite if `px` exists, else the colored block.
     const CHAR = {
-      stefan: { color: "#d9c27a", label: "STEFAN" },
-      penny:  { color: "#c9873f", label: "PENNY"  },
-      maria:  { color: "#c98fb0", label: "MARIA"  },
-      greg:   { color: "#8fb06a", label: "GREG"   },  // salad-green, naturally
-      alien:  { color: "#7de0a0", label: "???"    }
+      stefan: { color: "#d9c27a", label: "STEFAN", px: [
+        "...HHHHHH...","..HHHHHHHH..","..HssssssH..","..ssssssss..",
+        "..sesssess..","...ssssss...","...KKKKKK...","..KKKKKKKK..",
+        "s.KKKKKKKK.s","s.KKKKKKKK.s","..KKKKKKKK..","...KKKKKK...",
+        "...KK..KK...","...KK..KK...","...kk..kk...","..kkk..kkk.."
+      ]},
+      penny:  { color: "#c9873f", label: "PENNY", px: [
+        "............",".cc....cc...",".ccc..ccc...",".cccccccc...",
+        ".cceccecc...",".cccccccc...",".ccCccCcc...","cccccccccc..",
+        "cwwwwwwwwc..","cwwwwwwwwc..","cwwwwwwwwc..","ccwwwwwwcc..",
+        "cc.cc.cc....",".cc.cc.cc...","........cCC.",".........cC."
+      ]},
+      maria:  { color: "#c98fb0", label: "MARIA", px: [
+        "...BBBBBB...","..BBBBBBBB..","..BssssssB..","..ssssssss..",
+        "..sesssess..","...ssssss...","...pppppp...","..pppppppp..",
+        "s.pppppppp.s","s.pppppppp.s","..pppppppp..","...pppppp...",
+        "...pp..pp...","...pp..pp...","...jj..jj...","..jjj..jjj.."
+      ]},
+      greg:   { color: "#8fb06a", label: "GREG", px: [   // salad-green, naturally
+        "...gggggg...","..gggggggg..","..gssssssg..","..ssssssss..",
+        "..sesssess..","...ssssss...","...GGGGGG...","..GGGGGGGG..",
+        "s.GGGGGGGG.s","s.GGGGGGGG.s","..GGGGGGGG..","...GGGGGG...",
+        "...GG..GG...","...GG..GG...","...oo..oo...","..ooo..ooo.."
+      ]},
+      alien:  { color: "#7de0a0", label: "???", px: [
+        ".....aa.....","....a..a....",".....aa.....","...aaaaaa...",
+        "..aaaaaaaa..","..aeeaaeea..","..aaaaaaaa..","...aAAAAa...",
+        "...aaaaaa...","..aaaaaaaa..","s.aaaaaaaa.s","..aaaaaaaa..",
+        "...aa..aa...","...aa..aa...","...AA..AA...","..AAA..AAA.."
+      ]}
     };
 
     // 1) THE DATA: the whole story as scenes. Each scene names a bg, its chars,
@@ -455,17 +517,47 @@
     let currentText   = "";
     let currentOnDone = null;
 
-    // 3) DRAW THE ART: paint the background and lay out the character blocks.
+    // 3) DRAW THE ART: paint the background and lay out the characters.
+    //    Each character is a pixel sprite if it has a `px` map, else the old block.
+
+    // PX: how big one sprite pixel is, in screen pixels. A 12x16 map becomes a
+    // 96x128 sprite at PX=8. Bump this to zoom the whole cast up or down.
+    const PX = 8;
+
+    // spriteShadow: turn an ASCII pixel grid into ONE giant box-shadow string.
+    // The trick: a single 8x8 dot element, then one shadow per lit pixel that
+    // clones that dot to (x, y). Transparent cells ('.') are simply skipped.
+    function spriteShadow(grid) {
+      const parts = [];
+      for (let y = 0; y < grid.length; y++) {
+        for (let x = 0; x < grid[y].length; x++) {
+          const color = PAL[grid[y][x]];        // undefined for '.', so skipped
+          if (color) parts.push((x * PX) + "px " + (y * PX) + "px 0 0 " + color);
+        }
+      }
+      return parts.join(",");
+    }
+
     function showArt(scene) {
       bgEl.style.background = BG[scene.bg];
       charsEl.innerHTML = "";
       scene.chars.forEach(function (name) {
         const info = CHAR[name];
-        const block = document.createElement("div");
-        block.className = "char";
-        block.style.background = info.color;
-        block.textContent = info.label;
-        charsEl.appendChild(block);
+        if (info.px) {                            // real sprite -> box-shadow art
+          const wrap = document.createElement("div");
+          wrap.className = "char sprite";
+          const dot = document.createElement("div");
+          dot.className = "px";
+          dot.style.boxShadow = spriteShadow(info.px);
+          wrap.appendChild(dot);
+          charsEl.appendChild(wrap);
+        } else {                                  // no sprite -> old colored block
+          const block = document.createElement("div");
+          block.className = "char";
+          block.style.background = info.color;
+          block.textContent = info.label;
+          charsEl.appendChild(block);
+        }
       });
     }
 
