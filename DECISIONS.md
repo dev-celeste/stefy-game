@@ -39,6 +39,14 @@
 
 ## Change Log
 
+### 2026-07-17 — Stage 10: sound (finale) — game feature-complete
+- Built a **Web Audio sound engine** — everything synthesized with oscillators, **no audio files**, so the game stays a single self-contained HTML file.
+- Music: six chiptune loops (cozy / tense / hunt / arcade / win / soft) written in a tiny `seq("C4:2 E4:2 …")` shorthand; scenes carry an optional `music` field and `setMusic` only switches when the mood actually changes (shared-mood scenes don't restart the song).
+- SFX + 106.9 meme stings (confirm blip, DDR hit/whiff, vine-boom, airhorn, "OHHH", triumphant stinger), triggered data-driven via an optional `sting` field on scenes, plus a confirm blip on choices and hit/whiff blips inside the DDR game.
+- **Autoplay handled correctly:** the AudioContext is created lazily on the first user click (browsers block audio before a gesture). Always-visible **mute toggle** pinned top-right.
+- Verified headlessly: SFX silent before unlock, graph builds on init, mood switching (no same-track restart), stinger note count, and mute zeroing the master. Story graph still clean (21 scenes, 8 endings, 0 problems).
+- **All ten build stages are done — the game is feature-complete.** Remaining is optional polish: swap placeholder blocks for Procreate art, richer looping music, a branded title screen.
+
 ### 2026-07-17 — Stages 8–9: DDR minigame + 106.9 DJ narrator
 - **Stage 8:** built a canvas-based DDR minigame wired into the data-driven engine — a choice can carry `minigame: {chart, clear, fail}` instead of `next`, and the game routes to the clear/fail scene by hit percentage. Two charts (hard = solo, easy = co-op), Perfect/Good/Miss timing windows, combo + score HUD, arrow-key/WASD input. Verified with a headless harness (perfect run → end_2A; no play → end_2C).
 - **Stage 9:** added a recurring **106.9 M&S DJ narrator** as an optional `dj` string on scenes, rendered as an "ON AIR" radio caption above the story text (appears instantly while the story text still types). 16 DJ lines across the big beats (prologue, the fork, both branch openers, the DDR scenes, and all 8 endings). Pure data + one `showDJ` render function — engine philosophy preserved.

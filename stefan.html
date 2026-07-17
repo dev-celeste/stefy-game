@@ -161,12 +161,32 @@
       background: #5a3820;
       border-color: #d99a4e;
     }
+
+    /* THE MUTE TOGGLE: always visible, pinned to the top-right of the game. */
+    #mute {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 5;                 /* sit above the art + DDR overlay */
+      font-family: inherit;
+      font-size: 12px;
+      padding: 4px 8px;
+      background: rgba(20,16,24,0.8);
+      color: #f4f1e8;
+      border: 2px solid #4a3d63;
+      cursor: pointer;
+    }
+
+    #mute:hover {
+      border-color: #8a74c0;
+    }
   </style>
 </head>
 
 <body>
   <!-- ---- HTML: the STRUCTURE ---- -->
   <div id="game">
+    <button id="mute">&#9834; on</button>
     <div id="stage">
       <div id="bg"></div>
       <div id="chars"></div>
@@ -213,6 +233,8 @@
       start: {
         bg: "bedroom",
         chars: ["stefan"],
+        music: "cozy",
+        sting: "vineboom",
         dj: "You're locked in to 106.9 M&S — the only station brave enough to drop a vine boom at 7 a.m. Rise and grind, Wilmington!",
         text: "The alarm's been snoozed twice. On the shelf, Penny is pushing your coffee cup toward the edge in slow motion, staring dead at you. 106.9 M&S plays a vine boom from the kitchen.",
         choices: [
@@ -247,6 +269,7 @@
       b1_clockin: {
         bg: "foulk_break",
         chars: ["stefan", "greg"],
+        music: "tense",
         dj: "Shoutout to the maintenance heroes clocking in today. Somebody get Greg a bigger salad. *bruh sting*",
         text: "You clock in. Greg's in the break room, aggressively eating a salad. 'Yo! You're late. Eat yo salad before I toss yo salad.' But something's off — Mr. Abernathy's hearing aid is emitting a weird signal, and a resident is watching the microwave like it's TV.",
         choices: [
@@ -257,6 +280,7 @@
       b1_investigate: {
         bg: "foulk_rec",
         chars: ["stefan", "alien"],
+        sting: "ohhh",
         dj: "*record scratch* Uhh, we're getting weird reports out of Foulk, folks. Do NOT adjust your dial. Stay tuned...",
         text: "In the rec room, the 'residents' drop the act — glowing eyes, shed disguises, a small craft where the bingo table used to be. Foulk's been a quiet alien hideout. Greg's already halfway to the door.",
         choices: [
@@ -297,6 +321,8 @@
         bg: "foulk_invaded",
         chars: ["stefan"],
         ending: true,
+        music: "win",
+        sting: "ohhh",
         dj: "*OHHH sting* FOLKS. That scream just lit up every phone line in the building. Absolutely legendary.",
         text: "ENDING 1A — 'Visions (Live at Foulk).' You cue Visions and unleash a scream so pure it overloads their tech. Windows rattle, systems fry, they retreat. Greg, tearing up: 'Bro... that was the best set you've ever done.'",
         choices: []
@@ -305,6 +331,8 @@
         bg: "foulk_invaded",
         chars: ["stefan", "greg"],
         ending: true,
+        music: "win",
+        sting: "stinger",
         dj: "Two-player mode for the WIN! That's a co-op dub, baby. Greg, the salad's on us today.",
         text: "ENDING 1B — 'Co-op Mode.' You call combos on pure instinct, Greg swings the wrench. Teamwork wins. Fist-bump over the wreckage. Greg: 'NOW that's how you toss a salad.'",
         choices: []
@@ -313,6 +341,7 @@
         bg: "foulk_rec",
         chars: ["stefan", "alien"],
         ending: true,
+        music: "win",
         dj: "Heartwarming update out of Foulk — turns out they just wanted to retire in peace. 106.9 approves this wholesome content.",
         text: "ENDING 1C — 'They Just Wanted to Retire.' They weren't invading — they picked Foulk to live out their days in peace, and got spooked. Your kindness (and a mic-drop song) wins them over. They stay on as the home's most interesting residents. It's you and Greg's secret.",
         choices: []
@@ -321,6 +350,7 @@
         bg: "foulk_break",
         chars: ["stefan", "greg"],
         ending: true,
+        music: "soft",
         dj: "Sometimes just making it home IS the highlight reel. We respect the survivors. Go get that Nanu's, king.",
         text: "ENDING 1D — 'Lived to Tell It.' You and Greg hunker in the supply closet with the real residents, eating cold pizza until it quiets down. You never learn what happened. You clock out shaken and order Nanu's Chicken. Best worst day ever.",
         choices: []
@@ -330,6 +360,8 @@
       b2_hunt: {
         bg: "livingroom",
         chars: ["stefan", "maria"],
+        music: "hunt",
+        sting: "airhorn",
         dj: "*AIRHORN* THE 106.9 M&S RIDDLE HUNT STARTS NOW! Grand prize: YOUR band opens for AUGUST BURNS RED. Let's! Go!",
         text: "You call out. Maria's thrilled. You settle in for an Attack on Titan marathon, 106.9 M&S humming in the background. Then the DJ cuts in, LIVE, over an airhorn: 'The 106.9 RIDDLE HUNT starts NOW! First to crack our clues across Wilmington wins the GRAND PRIZE — YOUR band opens for AUGUST BURNS RED!'",
         choices: [ { label: "Wait. Scarpenters. That's winnable.", next: "b2_riddle" } ]
@@ -347,6 +379,7 @@
       b2_ddr_solo: {
         bg: "barcade",
         chars: ["stefan"],
+        music: "arcade",
         dj: "Ohhh it's a DDR machine?? Listeners, show us those legendary thumbs. Arrow keys, don't fail us now!",
         text: "The clue leads to a barcade — and a DDR machine holding the next clue. You crack your knuckles. Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
@@ -357,6 +390,7 @@
       b2_ddr_team: {
         bg: "barcade",
         chars: ["stefan", "maria"],
+        music: "arcade",
         dj: "Couples DDR?? 106.9 is OFFICIALLY rooting for you two. Hit those arrows in sync, lovebirds!",
         text: "Same barcade, same DDR machine. Maria bumps your shoulder: 'Co-op?' Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
@@ -370,6 +404,8 @@
         bg: "stage",
         chars: ["stefan"],
         ending: true,
+        music: "win",
+        sting: "stinger",
         dj: "*AIRHORN x3* WE HAVE A CHAMPION! Scarpenters, you're opening for AUGUST BURNS RED. History, live on 106.9!",
         text: "ENDING 2A — 'Champions of 106.9.' A flawless run wins it, solo-hero style. Weeks later, Scarpenters is on stage opening for August Burns Red — Maria front row, you screaming Burdened by Weight to a real crowd.",
         choices: []
@@ -378,6 +414,8 @@
         bg: "stage",
         chars: ["stefan", "maria"],
         ending: true,
+        music: "win",
+        sting: "stinger",
         dj: "A TEAM victory! Two people who met on a music app, now on stage together. We're not crying, YOU'RE crying.",
         text: "ENDING 2B — 'Two of Us.' You leaned on Maria's smarts and won as a team — a callback to how you met on the music app. Scarpenters gets the gig, together.",
         choices: []
@@ -386,6 +424,7 @@
         bg: "nanus",
         chars: ["stefan", "maria"],
         ending: true,
+        music: "soft",
         dj: "Second place, but FIRST in our hearts. Also — Nanu's Chicken? Elite choice. No notes. *chef's kiss sting*",
         text: "ENDING 2C — 'Second Place, Best Day.' You chased the funniest option all day — Nanu's Chicken, chaos, detours — and lost the prize by a hair. Worth it. Perfect day off.",
         choices: []
@@ -394,6 +433,8 @@
         bg: "barcade",
         chars: ["stefan", "penny"],
         ending: true,
+        music: "soft",
+        sting: "airhorn",
         dj: "BREAKING: 106.9's new station mascot is... a CAT. Penny, the booth is yours. This is the timeline we deserve.",
         text: "ENDING 2D — 'Penny Goes Viral.' Penny's dance-pad stunt blows up so hard that 106.9 crowns THE CAT the winner and makes him station mascot. Scarpenters still gets the gig — per Penny's 'management.'",
         choices: []
@@ -480,6 +521,7 @@
         btn.textContent = choice.label;
         btn.addEventListener("click", function (ev) {
           ev.stopPropagation();
+          sfx("confirm");                 // little blip so a choice feels clicky
           if (choice.minigame) {          // this choice launches the DDR minigame...
             startDDR(choice.minigame);    // ...which routes to clear/fail when done
           } else {
@@ -506,14 +548,17 @@
       const scene = STORY[id];
       showArt(scene);
       showDJ(scene);
+      setMusic(scene.music);        // switch mood music if this scene names one
+      if (scene.sting) sfx(scene.sting);   // play a one-shot meme sting if any
       choicesEl.innerHTML = "";
       typeText(scene.text, function () {
         showChoices(scene);
       });
     }
 
-    // 8) CLICK-TO-SKIP.
+    // 8) CLICK-TO-SKIP.  (Also the first click unlocks audio — see initAudio.)
     gameEl.addEventListener("click", function () {
+      initAudio();
       if (isTyping) finishTyping();
     });
 
@@ -610,11 +655,13 @@
         best.hit = true;
         ddr.hits++;
         ddr.combo++;
+        sfx("hit");
         if (bestDiff <= ddr.chart.perfect) { ddr.score += 100; ddr.lastJudge = "PERFECT"; }
         else                               { ddr.score += 50;  ddr.lastJudge = "GOOD"; }
       } else {                                   // pressed with no note near = whiff
         ddr.combo = 0;
         ddr.lastJudge = "MISS";
+        sfx("whiff");
       }
     }
 
@@ -710,6 +757,144 @@
       ddr = null;
       showScene(dest);
     }
+
+    /* ================= SOUND ================= */
+    // Everything is SYNTHESIZED with the Web Audio API — no audio files. That
+    // keeps the game a single self-contained HTML file you can email or USB.
+
+    let actx      = null;   // the AudioContext — the "sound card." null until unlocked.
+    let master    = null;   // master volume (the mute switch lives here)
+    let musicGain = null;   // separate volume for the background music (kept quieter)
+    let muted     = false;
+    let musicTimer  = null; // setTimeout handle that loops the current track
+    let currentTrack = null;// name of the track that should be playing
+
+    // Note name -> frequency (Hz). Just the handful of notes our little tunes use.
+    const NOTE = {
+      A2:110, C3:131, D3:147, E3:165, G3:196, A3:220, B3:247,
+      C4:262, D4:294, E4:330, F4:349, G4:392, A4:440, B4:494,
+      C5:523, D5:587, E5:659, G5:784, R:0   // R = rest (silence)
+    };
+
+    // Helper: turn "C4:2 E4:2 G4:4" style shorthand into [{f, d}] steps.
+    // d is in eighth-notes; we scale to seconds when we play.
+    function seq(str) {
+      return str.trim().split(/\s+/).map(function (tok) {
+        const parts = tok.split(":");
+        return { f: NOTE[parts[0]], d: Number(parts[1]) };
+      });
+    }
+
+    // TRACKS: short chiptune loops, one per mood. They just repeat.
+    const TRACKS = {
+      cozy:   seq("C4:2 E4:2 G4:2 E4:2 A4:2 G4:2 E4:2 D4:2"),           // prologue, warm
+      tense:  seq("A2:2 A2:1 C3:1 A2:2 D3:2 A2:2 G3:1 A2:1 A2:4"),       // Foulk, uneasy
+      hunt:   seq("C4:1 D4:1 E4:1 G4:1 E4:1 G4:1 A4:2 G4:1 E4:1 D4:2"),  // Branch 2, upbeat
+      arcade: seq("E4:1 E4:1 G4:1 A4:1 B4:1 A4:1 G4:1 E4:1"),            // DDR barcade, driving
+      win:    seq("C4:1 E4:1 G4:1 C5:2 G4:1 C5:1 E5:3 R:1"),             // triumphant endings
+      soft:   seq("A3:3 G3:1 E3:4 D3:3 C3:5")                            // gentle endings
+    };
+
+    const EIGHTH = 0.16;   // seconds per eighth-note (tempo)
+
+    // Create the AudioContext on the FIRST user gesture. Browsers block audio
+    // until the user interacts, so we can't start sound before then.
+    function initAudio() {
+      if (actx) return;                       // already unlocked
+      const AC = window.AudioContext || window.webkitAudioContext;
+      actx = new AC();
+      master = actx.createGain();
+      master.gain.value = muted ? 0 : 0.6;
+      master.connect(actx.destination);
+      musicGain = actx.createGain();
+      musicGain.gain.value = 0.18;            // music sits under the SFX
+      musicGain.connect(master);
+      if (currentTrack) playTrack(currentTrack);  // start whatever mood we're in
+    }
+
+    // TONE: play a single note. An oscillator makes the pitch; a gain node
+    // shapes its volume over time (quick attack, smooth fade) so it doesn't click.
+    function tone(freq, dur, type, when, dest, peak) {
+      if (!freq) return;                      // a rest: play nothing
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(dest || master);
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.linearRampToValueAtTime(peak, when + 0.01);          // attack
+      g.gain.exponentialRampToValueAtTime(0.0001, when + dur);    // decay
+      o.start(when);
+      o.stop(when + dur + 0.02);
+    }
+
+    // PLAY TRACK: schedule every note of the loop on the audio clock, then set a
+    // timer to schedule the loop again when it finishes. currentTrack guards it
+    // so a mood change stops the old loop from rescheduling itself.
+    function playTrack(name) {
+      const track = TRACKS[name];
+      let when = actx.currentTime + 0.05;
+      let total = 0;
+      track.forEach(function (step) {
+        const dur = step.d * EIGHTH;
+        tone(step.f, dur * 0.9, "square", when, musicGain, 0.22);
+        when  += dur;
+        total += dur;
+      });
+      musicTimer = setTimeout(function () {
+        if (currentTrack === name && actx) playTrack(name);
+      }, total * 1000);
+    }
+
+    // SET MUSIC: switch moods. Does nothing if we're already on that track, so
+    // scenes that share a mood don't restart the song.
+    function setMusic(name) {
+      if (!name || name === currentTrack) return;
+      currentTrack = name;
+      clearTimeout(musicTimer);
+      if (actx) playTrack(name);
+    }
+
+    // SFX: short synthesized sound effects and 106.9 meme stings, triggered at
+    // big beats via an optional `sting` field on a scene (or on choice clicks).
+    function sfx(name) {
+      if (!actx) return;
+      const t = actx.currentTime;
+      if (name === "confirm") {                       // clicking a choice
+        tone(660, 0.08, "square", t,        master, 0.3);
+        tone(880, 0.09, "square", t + 0.06, master, 0.3);
+      } else if (name === "hit") {                     // a good DDR arrow
+        tone(880, 0.06, "square", t, master, 0.25);
+      } else if (name === "whiff") {                   // a missed DDR arrow
+        tone(120, 0.12, "sawtooth", t, master, 0.2);
+      } else if (name === "vineboom") {                // deep meme "boom"
+        tone(70, 0.5, "sine", t, master, 0.5);
+      } else if (name === "airhorn") {                 // hype sting
+        [0, 0.14, 0.28].forEach(function (off) {
+          tone(233, 0.13, "sawtooth", t + off,        master, 0.28);
+          tone(311, 0.13, "sawtooth", t + off + 0.005, master, 0.28);
+        });
+      } else if (name === "ohhh") {                    // crowd "OHHH" swell
+        tone(196, 0.4, "triangle", t, master, 0.3);
+        tone(294, 0.4, "triangle", t + 0.04, master, 0.28);
+      } else if (name === "stinger") {                 // triumphant arpeggio
+        [523, 659, 784, 1047].forEach(function (f, i) {
+          tone(f, 0.18, "square", t + i * 0.07, master, 0.3);
+        });
+      }
+    }
+
+    // THE MUTE TOGGLE: flip master volume and update the label. Also unlocks
+    // audio, so clicking it is enough to turn sound on from a silent start.
+    const muteBtn = document.getElementById("mute");
+    muteBtn.addEventListener("click", function (ev) {
+      ev.stopPropagation();                    // don't let it trigger click-to-skip
+      initAudio();
+      muted = !muted;
+      master.gain.value = muted ? 0 : 0.6;
+      muteBtn.innerHTML = muted ? "\u266A off" : "\u266A on";
+    });
 
     /* ================================================ */
 
