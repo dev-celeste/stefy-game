@@ -33,6 +33,22 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;         /* anchor for the DDR overlay that fills the game */
+    }
+
+    /* THE DDR OVERLAY: a full-screen layer that covers the game during the
+       minigame. Hidden by default; shown while the rhythm game runs. */
+    #ddrWrap {
+      position: absolute;
+      inset: 0;
+      display: none;              /* flipped to "block" when the minigame starts */
+      background: #0b0a12;
+    }
+
+    #ddrCanvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated; /* crisp, blocky arrows */
     }
 
     /* THE ART STAGE: holds the background and character layers. */
@@ -133,6 +149,9 @@
     <div id="textbox">
       <p id="text"></p>
       <div id="choices"></div>
+    </div>
+    <div id="ddrWrap">
+      <canvas id="ddrCanvas" width="640" height="480"></canvas>
     </div>
   </div>
 
@@ -292,19 +311,19 @@
       b2_ddr_solo: {
         bg: "barcade",
         chars: ["stefan"],
-        text: "The clue leads to a barcade — and a DDR machine holding the next clue. [The real DDR minigame lands in a later stage.] You crack your knuckles.",
+        text: "The clue leads to a barcade — and a DDR machine holding the next clue. You crack your knuckles. Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
-          { label: "Go for a flawless, high-difficulty run", next: "end_2A" },
-          { label: "Penny bolts from your backpack onto the pad!", next: "end_2D" }
+          { label: "Step on the pad — go for a flawless run", minigame: { chart: "hard", clear: "end_2A", fail: "end_2C" } },
+          { label: "Let Penny take the pad instead",          next: "end_2D" }
         ]
       },
       b2_ddr_team: {
         bg: "barcade",
         chars: ["stefan", "maria"],
-        text: "Same barcade, same DDR machine. Maria bumps your shoulder. 'Co-op?' [The real DDR minigame lands in a later stage.]",
+        text: "Same barcade, same DDR machine. Maria bumps your shoulder: 'Co-op?' Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
-          { label: "Co-op the dance with Maria",          next: "end_2B" },
-          { label: "Detour to Nanu's first, then wing it", next: "end_2C" }
+          { label: "Co-op the dance with Maria",            minigame: { chart: "easy", clear: "end_2B", fail: "end_2C" } },
+          { label: "Detour to Nanu's first, wing it later", next: "end_2C" }
         ]
       },
 
@@ -402,7 +421,11 @@
         btn.textContent = choice.label;
         btn.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          showScene(choice.next);
+          if (choice.minigame) {          // this choice launches the DDR minigame...
+            startDDR(choice.minigame);    // ...which routes to clear/fail when done
+          } else {
+            showScene(choice.next);       // ...otherwise just move to the next scene
+          }
         });
         choicesEl.appendChild(btn);
       });
@@ -433,6 +456,202 @@
     gameEl.addEventListener("click", function () {
       if (isTyping) finishTyping();
     });
+
+    /* ================= DDR MINIGAME ================= */
+
+    // Four lanes, in screen order left -> right. Each lane has a screen x, an
+    // arrow glyph, a color, and the keys that trigger it.
+    const LANES     = ["left", "down", "up", "right"];
+    const LANE_X    = { left: 110, down: 250, up: 390, right: 530 };
+    const GLYPH     = { left: "\u25C0", down: "\u25BC", up: "\u25B2", right: "\u25B6" };
+    const LANE_COL  = { left: "#c98fb0", down: "#8fb06a", up: "#7dc0e0", right: "#d9a24e" };
+    const TARGET_Y  = 96;   // the line where arrows should be hit
+
+    // Map keyboard keys -> lane. Arrow keys, plus WASD as a backup.
+    const KEY_LANE = {
+      ArrowLeft: "left", ArrowDown: "down", ArrowUp: "up", ArrowRight: "right",
+      a: "left", s: "down", w: "up", d: "right"
+    };
+
+    // Build a note list from a lane pattern: note i happens at start + i*gap ms.
+    function makeNotes(pattern, gap, start) {
+      return pattern.map(function (lane, i) {
+        return { time: start + i * gap, lane: lane };
+      });
+    }
+
+    // Two charts. `speed` = pixels travelled per millisecond (higher = faster/
+    // harder). `perfect`/`good` = timing windows in ms. `clearPct` = fraction of
+    // notes you must hit to clear the song.
+    const CHARTS = {
+      hard: {
+        speed: 0.45, perfect: 55, good: 120, clearPct: 0.55,
+        notes: makeNotes(
+          ["left","down","up","right","up","down","left","right",
+           "down","up","right","left","up","up","down","down",
+           "left","right","left","right","down","up","left","right"],
+          360, 1400)
+      },
+      easy: {
+        speed: 0.30, perfect: 75, good: 165, clearPct: 0.50,
+        notes: makeNotes(
+          ["down","up","left","right","up","down","left",
+           "right","up","down","left","right","down","up"],
+          620, 1600)
+      }
+    };
+
+    const ddrWrap = document.getElementById("ddrWrap");
+    const ddrCtx  = document.getElementById("ddrCanvas").getContext("2d");
+
+    let ddr = null;  // holds all state for the active game (null when not playing)
+
+    // START: set up fresh game state, show the overlay, listen for keys, and
+    // begin the animation loop.
+    function startDDR(cfg) {
+      const chart = CHARTS[cfg.chart];
+      ddr = {
+        cfg: cfg,
+        chart: chart,
+        // copy each note and add hit/missed flags so we don't mutate the chart
+        notes: chart.notes.map(function (n) {
+          return { time: n.time, lane: n.lane, hit: false, missed: false };
+        }),
+        startT: performance.now(),
+        score: 0, combo: 0, hits: 0,
+        flash: {},          // per-lane timestamp of the last keypress (for glow)
+        lastJudge: ""       // "PERFECT" / "GOOD" / "MISS" text to show
+      };
+      ddrWrap.style.display = "block";
+      window.addEventListener("keydown", ddrKey);
+      requestAnimationFrame(ddrLoop);
+    }
+
+    // KEY: the player pressed a key. Find the closest still-open note in that
+    // lane and judge how close the timing was.
+    function ddrKey(e) {
+      if (!ddr) return;
+      const lane = KEY_LANE[e.key] || KEY_LANE[e.key.toLowerCase()];
+      if (!lane) return;
+      e.preventDefault();                       // stop arrow keys from scrolling
+
+      const t = performance.now() - ddr.startT; // ms since the song started
+      ddr.flash[lane] = t;                       // light up this lane's target
+
+      // find the nearest un-judged note in this lane
+      let best = null, bestDiff = Infinity;
+      ddr.notes.forEach(function (n) {
+        if (n.lane !== lane || n.hit || n.missed) return;
+        const diff = Math.abs(n.time - t);
+        if (diff < bestDiff) { bestDiff = diff; best = n; }
+      });
+
+      if (best && bestDiff <= ddr.chart.good) {  // close enough to count as a hit
+        best.hit = true;
+        ddr.hits++;
+        ddr.combo++;
+        if (bestDiff <= ddr.chart.perfect) { ddr.score += 100; ddr.lastJudge = "PERFECT"; }
+        else                               { ddr.score += 50;  ddr.lastJudge = "GOOD"; }
+      } else {                                   // pressed with no note near = whiff
+        ddr.combo = 0;
+        ddr.lastJudge = "MISS";
+      }
+    }
+
+    // LOOP: runs ~60x/second. Retire notes that slid past the window as misses,
+    // redraw everything, and end the song once the last note is well past.
+    function ddrLoop() {
+      if (!ddr) return;
+      const t = performance.now() - ddr.startT;
+
+      ddr.notes.forEach(function (n) {
+        if (!n.hit && !n.missed && t - n.time > ddr.chart.good) {
+          n.missed = true;
+          ddr.combo = 0;
+          ddr.lastJudge = "MISS";
+        }
+      });
+
+      drawDDR(t);
+
+      const lastTime = ddr.chart.notes[ddr.chart.notes.length - 1].time;
+      if (t > lastTime + 900) { endDDR(); return; }
+      requestAnimationFrame(ddrLoop);
+    }
+
+    // DRAW: paint one frame — title, the four lane targets, the moving arrows,
+    // and the HUD (score / combo / hits / last judgment).
+    function drawDDR(t) {
+      const c = ddrCtx;
+      c.fillStyle = "#0b0a12";
+      c.fillRect(0, 0, 640, 480);
+
+      c.textAlign = "center";
+      c.fillStyle = "#8a74c0";
+      c.font = "16px 'Courier New', monospace";
+      c.fillText("106.9 DDR  \u2014  hit the arrows on the line!", 320, 34);
+      c.fillStyle = "#6a5d83";
+      c.font = "13px 'Courier New', monospace";
+      c.fillText("use the ARROW KEYS", 320, 56);
+
+      // lane targets (the ring where arrows should land)
+      LANES.forEach(function (lane) {
+        const x = LANE_X[lane];
+        const lit = ddr.flash[lane] && (t - ddr.flash[lane] < 110);
+        c.fillStyle = lit ? "#d99a4e" : "#1b1626";
+        c.fillRect(x - 42, TARGET_Y - 42, 84, 84);
+        c.strokeStyle = "#4a3d63";
+        c.lineWidth = 3;
+        c.strokeRect(x - 42, TARGET_Y - 42, 84, 84);
+        c.fillStyle = "#5a4d73";
+        c.font = "38px monospace";
+        c.fillText(GLYPH[lane], x, TARGET_Y + 13);
+      });
+
+      // moving arrows: an arrow reaches TARGET_Y exactly at its note time
+      c.font = "38px monospace";
+      ddr.notes.forEach(function (n) {
+        if (n.hit) return;
+        const x = LANE_X[n.lane];
+        const y = TARGET_Y + (n.time - t) * ddr.chart.speed;
+        if (y < -50 || y > 520) return;         // off-screen, skip
+        c.fillStyle = n.missed ? "#5a3340" : LANE_COL[n.lane];
+        c.fillText(GLYPH[n.lane], x, y + 13);
+      });
+
+      // HUD
+      c.fillStyle = "#f4f1e8";
+      c.font = "18px 'Courier New', monospace";
+      c.textAlign = "left";
+      c.fillText("Score " + ddr.score, 22, 452);
+      c.textAlign = "center";
+      c.fillText("Combo " + ddr.combo, 320, 452);
+      c.textAlign = "right";
+      c.fillText(ddr.hits + "/" + ddr.notes.length, 618, 452);
+
+      if (ddr.lastJudge) {
+        c.textAlign = "center";
+        c.font = "22px 'Courier New', monospace";
+        c.fillStyle = ddr.lastJudge === "PERFECT" ? "#7de0a0"
+                    : ddr.lastJudge === "GOOD"    ? "#d9c27a"
+                    : "#c96a6a";
+        c.fillText(ddr.lastJudge, 320, TARGET_Y + 92);
+      }
+    }
+
+    // END: stop the game, decide clear vs. fail by hit percentage, and route to
+    // the matching ending scene.
+    function endDDR() {
+      window.removeEventListener("keydown", ddrKey);
+      ddrWrap.style.display = "none";
+      const pct = ddr.hits / ddr.notes.length;
+      const cleared = pct >= ddr.chart.clearPct;
+      const dest = cleared ? ddr.cfg.clear : ddr.cfg.fail;
+      ddr = null;
+      showScene(dest);
+    }
+
+    /* ================================================ */
 
     // 9) KICK IT OFF.
     showScene("start");
