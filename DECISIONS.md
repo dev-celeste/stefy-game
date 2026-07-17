@@ -14,13 +14,16 @@
 **Story shape**
 - Title: **106.9 Presents: Stefan's Big Day**.
 - Shared cozy **prologue** → one fork: **go to work (Branch 1)** or **call out (Branch 2)**.
-- **Branch 1 — Invasion at Foulk:** aliens hiding among residents at the old folks home; Stefan's scream + handiness save the day. 4 endings (1A Visions/Scream, 1B Co-op w/ Greg, 1C The Reveal—aliens retiring, 1D Lived to Tell It).
-- **Branch 2 — The 106.9 Riddle Hunt:** radio contest; game/anime riddle → DDR minigame → finale. Grand prize = Scarpenters opens for August Burns Red. 4 endings (2A Champions, 2B Two of Us, 2C Second Place/Best Day, 2D Penny Goes Viral).
+- **Branch 1 — Invasion at Foulk:** aliens hiding among residents at the old folks home; Stefan's scream + handiness save the day. Mid-chapter **"Trace the Signal"** (boiler room + Signal Match minigame) sits before the investigate/toolup fork. 4 endings (1A Visions/Scream, 1B Co-op w/ Greg, 1C The Reveal—aliens retiring, 1D Lived to Tell It).
+- **Branch 2 — The 106.9 Riddle Hunt:** radio contest. Mid-chapter **"Tune the Dial"** (car radio + Tune minigame) → game/anime riddle → DDR minigame → finale. Grand prize = Scarpenters opens for August Burns Red. 4 endings (2A Champions, 2B Two of Us, 2C Second Place/Best Day, 2D Penny Goes Viral).
 - Recurring **106.9 M&S DJ narrator** between beats.
 
 **Gameplay**
 - Illustrated-story + hybrid interactive touches.
-- **DDR minigame** (Branch 2 centerpiece): keyboard ↑↓←→ / WASD, Perfect/Good/Miss timing, combo + score bar, clear threshold; two charts (hard = solo run, easy = co-op); Penny wildcard.
+- **Three minigames**, all sharing one canvas/overlay, dispatched by a `game` field on a choice's `minigame` config:
+  - **DDR** (Branch 2 centerpiece): ↑↓←→ / WASD rhythm, Perfect/Good/Miss timing, combo + score, two charts (hard = solo, easy = co-op); Penny wildcard.
+  - **Signal Match** (Branch 1): Simon-style memory — echo a growing arrow sequence; each lane pitched.
+  - **Tune the Dial** (Branch 2): needle-hold precision — steer onto 106.9 against drifting static to fill a signal-lock meter before time runs out.
 
 **Audio**
 - Retro chiptune via Web Audio API (no external files for prototype). Music per scene + SFX (blip, confirm, transition, stinger, meme stings). Always-visible mute toggle.
@@ -38,6 +41,19 @@
 ---
 
 ## Change Log
+
+### 2026-07-17 — Doubled the game: a new mid-chapter + minigame per branch
+- **Branch 1 gains "Trace the Signal"** (new `foulk_boiler` setting): the hearing-aid whine leads Stefan + Greg to a blinking alien junction box. New scenes `b1_signal` / `b1_signal_win` / `b1_signal_fail`; `b1_clockin` now routes through it into the existing investigate/toolup fork.
+- **New minigame — Signal Match** (Simon-style memory): the box blinks a growing arrow sequence you echo with the arrow keys; each lane has its own pitch. Clear → `b1_signal_win`, miss → `b1_signal_fail`.
+- **Branch 2 gains "Tune the Dial"** (new `car_radio` setting): the first clue only airs on 106.9's "ghost frequency." New scenes `b2_tune` / `b2_tune_win` / `b2_tune_miss` / `b2_tune_penny` (a chaotic Penny alt-path); inserted between `b2_hunt` and `b2_riddle`.
+- **New minigame — Tune the Dial** (needle-hold precision): a radio needle drifts on a wandering "static wind"; HOLD ←/→ to keep it on the 106.9 band and fill a signal-lock meter before time runs out. Clear → `b2_tune_win`, fail → `b2_tune_miss`.
+- **Engine philosophy preserved:** both minigames **reuse the existing DDR overlay + canvas** — zero new HTML/CSS. `showChoices` now dispatches on a `game` field (`"signal"` / `"tune"` / default DDR). New chapters are pure `STORY` data.
+- Story graph now **28 scenes, 8 endings, 0 dangling links**, all reachable from `start`. Both new minigame state machines headless-tested (Signal: clean run clears, wrong note fails, grows to target; Tune: steering clears ~5s, idle times out).
+
+### 2026-07-17 — Playtest round 1 fixes (music autostart, sprite recolors, ending polish)
+- **Music autostart bug fixed at the root:** choice buttons call `stopPropagation`, which was swallowing the click that unlocks Web Audio (so only toggling mute started sound). Added **capture-phase** `pointerdown`/`keydown` window listeners + `actx.resume()`, so music starts on the very first interaction (true pre-gesture autoplay is impossible in browsers).
+- **Sprite recolors** per Maria's canon: **Greg** = brown skin + all black; **Maria** = copper hair; **Penny** = grey tabby with white paws + black stripes. Verified via PIL renders before wiring.
+- **Satisfying retro endings:** endings now fire `celebrate()` — falling confetti, a popping/glowing title banner (per-ending `title` field), and bouncing character sprites, via a `.ending` class on `#stage`.
 
 ### 2026-07-17 — Real placeholder sprites + art references (post-feature-complete polish)
 - Replaced the labeled colored blocks with **hand-coded pixel sprites** for all five characters (Stefan, Penny, Maria, Greg, alien) — drawn as 12×16 ASCII maps + a shared `PAL` palette, rendered via the **CSS `box-shadow` single-element trick** (one 8px dot wearing one shadow per lit pixel). No image files, so the game stays a single self-contained HTML. `showArt` uses the sprite when a `px` map exists, else falls back to the old block. Verified: every lit pixel → exactly one shadow, no unknown color codes, all sprites 12×16.
