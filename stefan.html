@@ -307,6 +307,7 @@
       foulk_boiler: "#182a2e",  // basement boiler room, cold teal glow
       foulk_invaded:"#12212b",  // the invasion state (cold, alien)
       barcade:      "#14121f",  // neon-dark barcade
+      car_radio:    "#1a1626",  // inside the car at dusk, dashboard glow
       nanus:        "#3a2410",  // warm Nanu's Chicken glow
       stage:        "#0d0d16"   // concert stage
     };
@@ -537,7 +538,44 @@
         sting: "airhorn",
         dj: "*AIRHORN* THE 106.9 M&S RIDDLE HUNT STARTS NOW! Grand prize: YOUR band opens for AUGUST BURNS RED. Let's! Go!",
         text: "You call out. Maria's thrilled. You settle in for an Attack on Titan marathon, 106.9 M&S humming in the background. Then the DJ cuts in, LIVE, over an airhorn: 'The 106.9 RIDDLE HUNT starts NOW! First to crack our clues across Wilmington wins the GRAND PRIZE — YOUR band opens for AUGUST BURNS RED!'",
-        choices: [ { label: "Wait. Scarpenters. That's winnable.", next: "b2_riddle" } ]
+        choices: [ { label: "Wait. Scarpenters. That's winnable.", next: "b2_tune" } ]
+      },
+
+      /* ---- Branch 2 NEW mid-chapter: Tune the Dial (the car) ---- */
+      b2_tune: {
+        bg: "car_radio",
+        chars: ["stefan", "maria"],
+        music: "hunt",
+        dj: "First clue's a doozy, folks: it only airs on our GHOST FREQUENCY. Weak signal, big reward. Find 106.9's whisper channel and don't lose it.",
+        text: "You grab the keys and pile into the car — Maria riding shotgun with the notepad, Penny somehow already asleep on the dashboard. The DJ says the opening clue only plays on 106.9's faint 'ghost frequency.' The dial hisses with static. Maria: 'Okay hotshot — find it and HOLD it, I'll write down whatever we catch.'",
+        choices: [
+          { label: "Hand-tune the dial and lock onto 106.9", next: "b2_tune_win" },
+          { label: "Let Penny paw the knob (chaotic good)",   next: "b2_tune_penny" }
+        ]
+      },
+      b2_tune_win: {
+        bg: "car_radio",
+        chars: ["stefan", "maria"],
+        sting: "ohhh",
+        dj: "*OHHH* Crystal clear! You caught the whole clue. Somewhere in Wilmington, a door and a straw hat are waiting...",
+        text: "You feather the dial and the static parts — 106.9's ghost signal comes through clean. Maria scribbles every word as the clue drops. She grins, clicks the pen, and points at the windshield: 'Drive. I know exactly where this is.'",
+        choices: [ { label: "Hit the road — decode the clue", next: "b2_riddle" } ]
+      },
+      b2_tune_miss: {
+        bg: "car_radio",
+        chars: ["stefan", "maria"],
+        sting: "bruh",
+        dj: "Ooh, you lost it in the static — but our engineer left the clue looping. Lucky you. This once.",
+        text: "The needle keeps sliding off and the clue dissolves into hiss. Maria catches maybe half of it, filling the gaps with pure guesswork and confidence. 'I got the gist,' she says, absolutely not having the gist. Close enough — you roll out anyway.",
+        choices: [ { label: "Wing it — go decode the clue", next: "b2_riddle" } ]
+      },
+      b2_tune_penny: {
+        bg: "car_radio",
+        chars: ["stefan", "maria", "penny"],
+        sting: "airhorn",
+        dj: "BREAKING: a CAT just tuned a radio better than half our interns. Penny, the station is watching your career with interest.",
+        text: "You surrender the knob. Penny stretches, taps it exactly twice, and 106.9's ghost signal snaps into perfect clarity — clue and all. Maria stares. 'Did he just...' You did not teach him that. Penny goes back to sleep, job done.",
+        choices: [ { label: "Respect the cat — decode the clue", next: "b2_riddle" } ]
       },
       b2_riddle: {
         bg: "livingroom",
