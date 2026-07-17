@@ -549,7 +549,7 @@
         dj: "First clue's a doozy, folks: it only airs on our GHOST FREQUENCY. Weak signal, big reward. Find 106.9's whisper channel and don't lose it.",
         text: "You grab the keys and pile into the car — Maria riding shotgun with the notepad, Penny somehow already asleep on the dashboard. The DJ says the opening clue only plays on 106.9's faint 'ghost frequency.' The dial hisses with static. Maria: 'Okay hotshot — find it and HOLD it, I'll write down whatever we catch.'",
         choices: [
-          { label: "Hand-tune the dial and lock onto 106.9", next: "b2_tune_win" },
+          { label: "Hand-tune the dial and lock onto 106.9", minigame: { game: "tune", clear: "b2_tune_win", fail: "b2_tune_miss" } },
           { label: "Let Penny paw the knob (chaotic good)",   next: "b2_tune_penny" }
         ]
       },
@@ -811,8 +811,9 @@
           ev.stopPropagation();
           sfx("confirm");                 // little blip so a choice feels clicky
           if (choice.minigame) {          // this choice launches a minigame...
-            if (choice.minigame.game === "signal") startSignal(choice.minigame);
-            else                                   startDDR(choice.minigame);
+            if      (choice.minigame.game === "signal") startSignal(choice.minigame);
+            else if (choice.minigame.game === "tune")   startTune(choice.minigame);
+            else                                        startDDR(choice.minigame);
           } else {                        // ...which routes to clear/fail when done
             showScene(choice.next);       // ...otherwise just move to the next scene
           }
@@ -1213,6 +1214,157 @@
       window.removeEventListener("keydown", signalKey);
       const dest = cleared ? signal.cfg.clear : signal.cfg.fail;
       signal = null;
+      ddrWrap.style.display = "none";
+      showScene(dest);
+    }
+
+    /* ================= TUNE THE DIAL MINIGAME ================= */
+    // A "keep the needle in the zone" game — reuses the DDR overlay + canvas.
+    // A radio needle drifts on a slowly changing "static wind"; you HOLD the
+    // left/right arrows to steer it onto 106.9's green band. Staying in the band
+    // fills a signal-lock meter; drifting out drains it. Fill the meter before
+    // time runs out to clear. Different muscle again: steady precision, not
+    // rhythm or memory.
+
+    // The dial is a 0..100 track drawn between these screen x's, at this y.
+    const TUNE_X0 = 70, TUNE_X1 = 570, TUNE_Y = 210;
+    const tuneX = (pos) => TUNE_X0 + (pos / 100) * (TUNE_X1 - TUNE_X0);
+
+    let tune = null;   // active state (null when idle)
+
+    function startTune(cfg) {
+      const nowT = performance.now();
+      tune = {
+        cfg: cfg,
+        pos: 12,                 // needle position 0..100 (starts off-station, left)
+        vel: 0,                  // needle velocity
+        zoneC: 62, zoneHalf: 8,  // the 106.9 lock band (center + half-width)
+        lock: 0,                 // 0..need signal-lock meter
+        need: cfg.need || 100,
+        seconds: cfg.seconds || 14,
+        keys: { left: false, right: false },
+        startT: nowT, last: nowT,
+        judge: ""
+      };
+      ddrWrap.style.display = "block";
+      window.addEventListener("keydown", tuneKeyDown);
+      window.addEventListener("keyup",   tuneKeyUp);
+      requestAnimationFrame(tuneLoop);
+    }
+
+    // We track keys HELD (down until up), so steering feels smooth/analog.
+    function tuneKeyDown(e) {
+      if (!tune) return;
+      const lane = KEY_LANE[e.key] || KEY_LANE[e.key.toLowerCase()];
+      if (lane === "left")  { tune.keys.left  = true; e.preventDefault(); }
+      if (lane === "right") { tune.keys.right = true; e.preventDefault(); }
+    }
+    function tuneKeyUp(e) {
+      if (!tune) return;
+      const lane = KEY_LANE[e.key] || KEY_LANE[e.key.toLowerCase()];
+      if (lane === "left")  tune.keys.left  = false;
+      if (lane === "right") tune.keys.right = false;
+    }
+
+    // LOOP: integrate the needle physics, update the lock meter, end on win/timeout.
+    function tuneLoop() {
+      if (!tune) return;
+      const now = performance.now();
+      let dt = (now - tune.last) / 1000;
+      if (dt > 0.05) dt = 0.05;            // clamp big gaps (tab was backgrounded)
+      tune.last = now;
+      const elapsed = (now - tune.startT) / 1000;
+
+      // forces: a wandering "static wind" plus the player's steering
+      const wind = Math.sin(elapsed * 1.1) * 8 + Math.sin(elapsed * 2.3 + 0.6) * 5;
+      let accel = wind;
+      if (tune.keys.left)  accel -= 60;
+      if (tune.keys.right) accel += 60;
+      tune.vel += accel * dt;
+      tune.vel *= (1 - Math.min(1, 2.2 * dt));   // damping/friction
+      tune.pos += tune.vel * dt;
+      if (tune.pos < 0)   { tune.pos = 0;   tune.vel = 0; }
+      if (tune.pos > 100) { tune.pos = 100; tune.vel = 0; }
+
+      // lock meter: fill while inside the band, drain while outside
+      const inZone = Math.abs(tune.pos - tune.zoneC) <= tune.zoneHalf;
+      tune.lock += (inZone ? 32 : -22) * dt;
+      if (tune.lock < 0) tune.lock = 0;
+      tune.judge = inZone ? "LOCKED" : "...static...";
+
+      if (tune.lock >= tune.need)  { endTune(true);  return; }
+      if (elapsed >= tune.seconds) { endTune(false); return; }
+
+      drawTune(elapsed);
+      requestAnimationFrame(tuneLoop);
+    }
+
+    function drawTune(elapsed) {
+      const c = ddrCtx;
+      c.fillStyle = "#0b0a12";
+      c.fillRect(0, 0, 640, 480);
+
+      c.textAlign = "center";
+      c.fillStyle = "#8a74c0";
+      c.font = "16px 'Courier New', monospace";
+      c.fillText("TUNE THE DIAL  \u2014  lock onto 106.9", 320, 40);
+      c.fillStyle = "#6a5d83";
+      c.font = "13px 'Courier New', monospace";
+      c.fillText("HOLD the LEFT / RIGHT arrows to steer the needle", 320, 62);
+
+      // the dial track
+      c.strokeStyle = "#4a3d63";
+      c.lineWidth = 4;
+      c.beginPath(); c.moveTo(TUNE_X0, TUNE_Y); c.lineTo(TUNE_X1, TUNE_Y); c.stroke();
+      // tick marks
+      c.fillStyle = "#3a3050";
+      for (let p = 0; p <= 100; p += 10) c.fillRect(tuneX(p) - 1, TUNE_Y - 8, 2, 16);
+
+      // the green lock band (the "106.9" zone)
+      const zx0 = tuneX(tune.zoneC - tune.zoneHalf);
+      const zx1 = tuneX(tune.zoneC + tune.zoneHalf);
+      c.fillStyle = "rgba(125,224,160,0.28)";
+      c.fillRect(zx0, TUNE_Y - 30, zx1 - zx0, 60);
+      c.strokeStyle = "#7de0a0"; c.lineWidth = 2;
+      c.strokeRect(zx0, TUNE_Y - 30, zx1 - zx0, 60);
+      c.fillStyle = "#7de0a0"; c.font = "13px 'Courier New', monospace";
+      c.fillText("106.9", (zx0 + zx1) / 2, TUNE_Y - 38);
+
+      // the needle
+      const nx = tuneX(tune.pos);
+      const inZone = Math.abs(tune.pos - tune.zoneC) <= tune.zoneHalf;
+      c.strokeStyle = inZone ? "#f5f5f8" : "#d9a24e"; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(nx, TUNE_Y - 34); c.lineTo(nx, TUNE_Y + 34); c.stroke();
+
+      // faux frequency readout (reads 106.9 exactly when centered)
+      const mhz = (106.9 + (tune.pos - tune.zoneC) * 0.15).toFixed(1);
+      c.fillStyle = "#f4f1e8"; c.font = "34px 'Courier New', monospace";
+      c.fillText(mhz + " FM", 320, 130);
+
+      // lock meter
+      c.fillStyle = "#2a2440"; c.fillRect(TUNE_X0, 300, TUNE_X1 - TUNE_X0, 26);
+      c.fillStyle = "#7de0a0";
+      c.fillRect(TUNE_X0, 300, (TUNE_X1 - TUNE_X0) * (tune.lock / tune.need), 26);
+      c.strokeStyle = "#4a3d63"; c.lineWidth = 2;
+      c.strokeRect(TUNE_X0, 300, TUNE_X1 - TUNE_X0, 26);
+      c.fillStyle = "#f4f1e8"; c.font = "14px 'Courier New', monospace";
+      c.fillText("SIGNAL LOCK", 320, 292);
+
+      // timer + judge
+      const left = Math.max(0, tune.seconds - elapsed).toFixed(1);
+      c.textAlign = "left";  c.fillText("Time " + left + "s", 22, 452);
+      c.textAlign = "right"; c.fillText(Math.round(tune.lock) + "%", 618, 452);
+      c.textAlign = "center";
+      c.fillStyle = inZone ? "#7de0a0" : "#c96a6a";
+      c.font = "18px 'Courier New', monospace";
+      c.fillText(tune.judge, 320, 452);
+    }
+
+    function endTune(cleared) {
+      window.removeEventListener("keydown", tuneKeyDown);
+      window.removeEventListener("keyup",   tuneKeyUp);
+      const dest = cleared ? tune.cfg.clear : tune.cfg.fail;
+      tune = null;
       ddrWrap.style.display = "none";
       showScene(dest);
     }
