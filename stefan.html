@@ -95,6 +95,31 @@
       overflow: auto;
     }
 
+    /* THE 106.9 DJ NARRATOR: a radio caption that cuts in on the big beats.
+       Hidden on scenes that carry no `dj` line. */
+    #dj {
+      display: none;              /* flipped to "block" only when a dj line exists */
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #1c1230;
+      border-left: 4px solid #d99a4e;   /* amber "radio" accent */
+    }
+
+    #dj .tag {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #8a74c0;
+      margin-bottom: 3px;
+    }
+
+    #dj .line {
+      font-size: 13px;
+      line-height: 1.5;
+      font-style: italic;
+      color: #e7c98a;
+    }
+
     #text {
       font-size: 17px;
       line-height: 1.6;
@@ -147,6 +172,7 @@
       <div id="chars"></div>
     </div>
     <div id="textbox">
+      <div id="dj"></div>
       <p id="text"></p>
       <div id="choices"></div>
     </div>
@@ -187,6 +213,7 @@
       start: {
         bg: "bedroom",
         chars: ["stefan"],
+        dj: "You're locked in to 106.9 M&S — the only station brave enough to drop a vine boom at 7 a.m. Rise and grind, Wilmington!",
         text: "The alarm's been snoozed twice. On the shelf, Penny is pushing your coffee cup toward the edge in slow motion, staring dead at you. 106.9 M&S plays a vine boom from the kitchen.",
         choices: [
           { label: "Save the cup!",   next: "cup_save" },
@@ -208,6 +235,7 @@
       morning_choice: {
         bg: "livingroom",
         chars: ["stefan", "maria"],
+        dj: "Big fork-in-the-road energy this morning, folks. *airhorn* Whatever you pick — no wrong answers, only content!",
         text: "One Piece is paused on the TV, an Eagles pennant on the wall, your mic stand in the corner. Maria hands you coffee. Your work phone buzzes: FOULK needs you today. 106.9 drops an 'OHHH' sting, like it knows.",
         choices: [
           { label: "Yeah — I'm heading in to Foulk.",       next: "b1_clockin" },
@@ -219,6 +247,7 @@
       b1_clockin: {
         bg: "foulk_break",
         chars: ["stefan", "greg"],
+        dj: "Shoutout to the maintenance heroes clocking in today. Somebody get Greg a bigger salad. *bruh sting*",
         text: "You clock in. Greg's in the break room, aggressively eating a salad. 'Yo! You're late. Eat yo salad before I toss yo salad.' But something's off — Mr. Abernathy's hearing aid is emitting a weird signal, and a resident is watching the microwave like it's TV.",
         choices: [
           { label: "Investigate the weirdness",         next: "b1_investigate" },
@@ -228,6 +257,7 @@
       b1_investigate: {
         bg: "foulk_rec",
         chars: ["stefan", "alien"],
+        dj: "*record scratch* Uhh, we're getting weird reports out of Foulk, folks. Do NOT adjust your dial. Stay tuned...",
         text: "In the rec room, the 'residents' drop the act — glowing eyes, shed disguises, a small craft where the bingo table used to be. Foulk's been a quiet alien hideout. Greg's already halfway to the door.",
         choices: [
           { label: "Try to talk them down",       next: "b1_talk"  },
@@ -267,6 +297,7 @@
         bg: "foulk_invaded",
         chars: ["stefan"],
         ending: true,
+        dj: "*OHHH sting* FOLKS. That scream just lit up every phone line in the building. Absolutely legendary.",
         text: "ENDING 1A — 'Visions (Live at Foulk).' You cue Visions and unleash a scream so pure it overloads their tech. Windows rattle, systems fry, they retreat. Greg, tearing up: 'Bro... that was the best set you've ever done.'",
         choices: []
       },
@@ -274,6 +305,7 @@
         bg: "foulk_invaded",
         chars: ["stefan", "greg"],
         ending: true,
+        dj: "Two-player mode for the WIN! That's a co-op dub, baby. Greg, the salad's on us today.",
         text: "ENDING 1B — 'Co-op Mode.' You call combos on pure instinct, Greg swings the wrench. Teamwork wins. Fist-bump over the wreckage. Greg: 'NOW that's how you toss a salad.'",
         choices: []
       },
@@ -281,6 +313,7 @@
         bg: "foulk_rec",
         chars: ["stefan", "alien"],
         ending: true,
+        dj: "Heartwarming update out of Foulk — turns out they just wanted to retire in peace. 106.9 approves this wholesome content.",
         text: "ENDING 1C — 'They Just Wanted to Retire.' They weren't invading — they picked Foulk to live out their days in peace, and got spooked. Your kindness (and a mic-drop song) wins them over. They stay on as the home's most interesting residents. It's you and Greg's secret.",
         choices: []
       },
@@ -288,6 +321,7 @@
         bg: "foulk_break",
         chars: ["stefan", "greg"],
         ending: true,
+        dj: "Sometimes just making it home IS the highlight reel. We respect the survivors. Go get that Nanu's, king.",
         text: "ENDING 1D — 'Lived to Tell It.' You and Greg hunker in the supply closet with the real residents, eating cold pizza until it quiets down. You never learn what happened. You clock out shaken and order Nanu's Chicken. Best worst day ever.",
         choices: []
       },
@@ -296,12 +330,14 @@
       b2_hunt: {
         bg: "livingroom",
         chars: ["stefan", "maria"],
+        dj: "*AIRHORN* THE 106.9 M&S RIDDLE HUNT STARTS NOW! Grand prize: YOUR band opens for AUGUST BURNS RED. Let's! Go!",
         text: "You call out. Maria's thrilled. You settle in for an Attack on Titan marathon, 106.9 M&S humming in the background. Then the DJ cuts in, LIVE, over an airhorn: 'The 106.9 RIDDLE HUNT starts NOW! First to crack our clues across Wilmington wins the GRAND PRIZE — YOUR band opens for AUGUST BURNS RED!'",
         choices: [ { label: "Wait. Scarpenters. That's winnable.", next: "b2_riddle" } ]
       },
       b2_riddle: {
         bg: "livingroom",
         chars: ["stefan", "maria"],
+        dj: "Clue number one, coming in HOT. Decode it, race for it, win it. No pressure. (Okay, a little pressure.)",
         text: "The first clue drops: 'Where the keyblade bearer would seek a door, and a straw-hat crew would restock their store.' Penny's ears perk up. Maria grabs a notepad.",
         choices: [
           { label: "Crack it with gamer instinct (the Kingdom Hearts read)", next: "b2_ddr_solo" },
@@ -311,6 +347,7 @@
       b2_ddr_solo: {
         bg: "barcade",
         chars: ["stefan"],
+        dj: "Ohhh it's a DDR machine?? Listeners, show us those legendary thumbs. Arrow keys, don't fail us now!",
         text: "The clue leads to a barcade — and a DDR machine holding the next clue. You crack your knuckles. Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
           { label: "Step on the pad — go for a flawless run", minigame: { chart: "hard", clear: "end_2A", fail: "end_2C" } },
@@ -320,6 +357,7 @@
       b2_ddr_team: {
         bg: "barcade",
         chars: ["stefan", "maria"],
+        dj: "Couples DDR?? 106.9 is OFFICIALLY rooting for you two. Hit those arrows in sync, lovebirds!",
         text: "Same barcade, same DDR machine. Maria bumps your shoulder: 'Co-op?' Hit each arrow with the matching arrow key as it reaches the line.",
         choices: [
           { label: "Co-op the dance with Maria",            minigame: { chart: "easy", clear: "end_2B", fail: "end_2C" } },
@@ -332,6 +370,7 @@
         bg: "stage",
         chars: ["stefan"],
         ending: true,
+        dj: "*AIRHORN x3* WE HAVE A CHAMPION! Scarpenters, you're opening for AUGUST BURNS RED. History, live on 106.9!",
         text: "ENDING 2A — 'Champions of 106.9.' A flawless run wins it, solo-hero style. Weeks later, Scarpenters is on stage opening for August Burns Red — Maria front row, you screaming Burdened by Weight to a real crowd.",
         choices: []
       },
@@ -339,6 +378,7 @@
         bg: "stage",
         chars: ["stefan", "maria"],
         ending: true,
+        dj: "A TEAM victory! Two people who met on a music app, now on stage together. We're not crying, YOU'RE crying.",
         text: "ENDING 2B — 'Two of Us.' You leaned on Maria's smarts and won as a team — a callback to how you met on the music app. Scarpenters gets the gig, together.",
         choices: []
       },
@@ -346,6 +386,7 @@
         bg: "nanus",
         chars: ["stefan", "maria"],
         ending: true,
+        dj: "Second place, but FIRST in our hearts. Also — Nanu's Chicken? Elite choice. No notes. *chef's kiss sting*",
         text: "ENDING 2C — 'Second Place, Best Day.' You chased the funniest option all day — Nanu's Chicken, chaos, detours — and lost the prize by a hair. Worth it. Perfect day off.",
         choices: []
       },
@@ -353,6 +394,7 @@
         bg: "barcade",
         chars: ["stefan", "penny"],
         ending: true,
+        dj: "BREAKING: 106.9's new station mascot is... a CAT. Penny, the booth is yours. This is the timeline we deserve.",
         text: "ENDING 2D — 'Penny Goes Viral.' Penny's dance-pad stunt blows up so hard that 106.9 crowns THE CAT the winner and makes him station mascot. Scarpenters still gets the gig — per Penny's 'management.'",
         choices: []
       }
@@ -364,6 +406,7 @@
     const charsEl   = document.getElementById("chars");
     const textEl    = document.getElementById("text");
     const choicesEl = document.getElementById("choices");
+    const djEl      = document.getElementById("dj");
 
     // Typewriter state:
     let typeTimer     = null;
@@ -383,6 +426,22 @@
         block.textContent = info.label;
         charsEl.appendChild(block);
       });
+    }
+
+    // 3b) THE DJ NARRATOR: if this scene carries a `dj` line, show it as a 106.9
+    //     radio caption above the story text; otherwise hide the banner.
+    function showDJ(scene) {
+      if (scene.dj) {
+        // static chrome via innerHTML, but the DJ's words go in via textContent
+        // (safe — the line is treated as text, never as HTML).
+        djEl.innerHTML =
+          '<span class="tag">\u25CF ON AIR \u2014 106.9 M&S</span>' +
+          '<span class="line"></span>';
+        djEl.querySelector(".line").textContent = scene.dj;
+        djEl.style.display = "block";
+      } else {
+        djEl.style.display = "none";
+      }
     }
 
     // 4) THE TYPEWRITER.
@@ -446,6 +505,7 @@
     function showScene(id) {
       const scene = STORY[id];
       showArt(scene);
+      showDJ(scene);
       choicesEl.innerHTML = "";
       typeText(scene.text, function () {
         showChoices(scene);

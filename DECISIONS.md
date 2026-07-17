@@ -39,6 +39,11 @@
 
 ## Change Log
 
+### 2026-07-17 — Stages 8–9: DDR minigame + 106.9 DJ narrator
+- **Stage 8:** built a canvas-based DDR minigame wired into the data-driven engine — a choice can carry `minigame: {chart, clear, fail}` instead of `next`, and the game routes to the clear/fail scene by hit percentage. Two charts (hard = solo, easy = co-op), Perfect/Good/Miss timing windows, combo + score HUD, arrow-key/WASD input. Verified with a headless harness (perfect run → end_2A; no play → end_2C).
+- **Stage 9:** added a recurring **106.9 M&S DJ narrator** as an optional `dj` string on scenes, rendered as an "ON AIR" radio caption above the story text (appears instantly while the story text still types). 16 DJ lines across the big beats (prologue, the fork, both branch openers, the DDR scenes, and all 8 endings). Pure data + one `showDJ` render function — engine philosophy preserved.
+- Only Stage 10 (sound finale) remains.
+
 ### 2026-07-17 — Stages 2–7 built; full story content in
 - Engine grew stage by stage: data-driven scene rendering (2), choices + navigation and a bigger screen via `transform: scale(1.25)` keeping internal 640×480 (3), typewriter effect (4), click-to-skip (5), layered art stage with BG/CHAR palettes + placeholder character blocks (6).
 - **Stage 7:** wrote the entire story graph — prologue, morning fork, Branch 1 and Branch 2, all 8 endings — plus an ending/`Play again` restart mechanic. Branch 2's DDR step is a **placeholder choice** until the dedicated minigame stage.
