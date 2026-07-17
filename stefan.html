@@ -304,6 +304,7 @@
       livingroom:   "#241f33",  // cozy apartment
       foulk_break:  "#20303a",  // break room fluorescents
       foulk_rec:    "#2a2233",  // rec room, something's off
+      foulk_boiler: "#182a2e",  // basement boiler room, cold teal glow
       foulk_invaded:"#12212b",  // the invasion state (cold, alien)
       barcade:      "#14121f",  // neon-dark barcade
       nanus:        "#3a2410",  // warm Nanu's Chicken glow
@@ -407,8 +408,42 @@
         dj: "Shoutout to the maintenance heroes clocking in today. Somebody get Greg a bigger salad. *bruh sting*",
         text: "You clock in. Greg's in the break room, aggressively eating a salad. 'Yo! You're late. Eat yo salad before I toss yo salad.' But something's off — Mr. Abernathy's hearing aid is emitting a weird signal, and a resident is watching the microwave like it's TV.",
         choices: [
-          { label: "Investigate the weirdness",         next: "b1_investigate" },
-          { label: "Play it safe — grab your tools first", next: "b1_toolup"   }
+          { label: "Follow that whine — where's it coming from?", next: "b1_signal" },
+          { label: "Grab a flashlight and check it out together",  next: "b1_signal" }
+        ]
+      },
+
+      /* ---- Branch 1 NEW mid-chapter: Trace the Signal (boiler room) ---- */
+      b1_signal: {
+        bg: "foulk_boiler",
+        chars: ["stefan", "greg"],
+        music: "tense",
+        dj: "That hum you're hearing? Not the HVAC, folks. 106.9's got chills. Somebody check the basement... actually, no, DON'T. *bruh sting*",
+        text: "The whine pulls you and Greg down to the boiler room. Behind the water heater, a junction box you've never seen is blinking four little lights in a pattern — the same loop, over and over, like it's calling something. Greg leans in: 'Bro. That is NOT up to code.' If you can echo the pattern back, maybe you can answer whatever's on the other end — or scramble it.",
+        choices: [
+          { label: "Echo the pattern back (repeat the sequence)", next: "b1_signal_win" },
+          { label: "Nope — just yank the wires",                  next: "b1_toolup"     }
+        ]
+      },
+      b1_signal_win: {
+        bg: "foulk_boiler",
+        chars: ["stefan", "greg"],
+        sting: "ohhh",
+        dj: "*OHHH sting* Did the box just... blink BACK? We are so not equipped for this. Love that for you.",
+        text: "You tap the pattern back and the box goes still — then answers, blinking a slow, almost polite reply. Greg whispers, 'It's talkin' to you, man.' Whatever's upstairs now knows you can hear it. Time to go find it.",
+        choices: [
+          { label: "Head up and see who's really 'living' here", next: "b1_investigate" },
+          { label: "Gear up first — just in case",                next: "b1_toolup"     }
+        ]
+      },
+      b1_signal_fail: {
+        bg: "foulk_boiler",
+        chars: ["stefan", "greg"],
+        sting: "bruh",
+        dj: "Ooh, wrong note. The box did NOT like that. Maintenance, please proceed to the nearest exit. Calmly. Ish.",
+        text: "You fumble the sequence and the box shrieks a burst of static that kills the basement lights. Greg's already on the stairs: 'TOOLS. We get the TOOLS now.' No more talking to it — time to be ready.",
+        choices: [
+          { label: "Grab everything that swings and clamps", next: "b1_toolup" }
         ]
       },
       b1_investigate: {
