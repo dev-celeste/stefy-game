@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can you make pixel art in pure CSS? (yes — three ways)</title>
+<style>
+  :root { --ink:#e7def5; --dim:#a99fc4; --card:#241f33; --edge:#4a3d63; --accent:#d99a4e; --pop:#8a74c0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 80px;
+    background: #16111f; color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 19px; margin: 40px 0 10px; color: #fff; }
+  .lede { color: var(--dim); margin: 0 0 8px; }
+  p { margin: 0 0 14px; }
+  code { background: #1c1730; padding: 2px 6px; border-radius: 4px; font-size: 13px;
+         font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #f0d8a8; }
+  pre { background: #12101c; border: 1px solid var(--edge); border-radius: 8px;
+        padding: 14px 16px; overflow:auto; font-size: 12.5px; line-height:1.5;
+        font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #cde3c9; }
+  .card { background: var(--card); border: 1px solid var(--edge); border-radius: 12px;
+          padding: 20px 22px; margin: 14px 0; }
+  .demo-row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; margin: 6px 0 4px; }
+  .demo-label { font-size: 12px; color: var(--dim); margin-top: 8px; }
+  .tag { display:inline-block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+         color: #16111f; background: var(--accent); padding: 2px 8px; border-radius: 20px;
+         font-weight: 700; margin-bottom: 8px; }
+  .stage { background: #2a2140; border-radius: 8px; padding: 16px; display:inline-block;
+           image-rendering: pixelated; }
+  button { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink);
+           background: #322a47; border: 1px solid var(--edge); border-radius: 8px; padding: 7px 12px; }
+  button:hover { border-color: var(--pop); }
+  input[type=range] { width: 220px; accent-color: var(--pop); vertical-align: middle; }
+  .controls { margin-top: 12px; font-size: 13px; color: var(--dim); }
+  .pill { color: var(--pop); font-weight: 600; }
+  .foot { color: var(--dim); font-size: 13px; margin-top: 36px; border-top:1px solid var(--edge); padding-top:16px; }
+
+  /* ---------- TECHNIQUE 2: a literal grid of <div> pixels ---------- */
+  .grid-sprite { display: grid; image-rendering: pixelated; }
+  .grid-sprite div { width: 100%; height: 100%; }
+
+  /* ---------- TECHNIQUE 3: the single-dot box-shadow sprite ---------- */
+  .shadow-sprite { position: relative; }
+  .shadow-sprite .dot { position: absolute; top: 0; left: 0; background: transparent; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Can you make pixel art in pure CSS? Yes — and here are three ways.</h1>
+  <p class="lede">You asked whether pixel art can live in pure HTML/CSS. It absolutely can. This page
+  builds the <em>same Stefan sprite</em> three different ways, cheapest trick to cleverest — and the
+  third one is exactly what your game now uses.</p>
+
+  <p>Pixel art is just a tiny grid of colored squares. So any technique that lets CSS draw a grid of
+  colored squares — and keeps them crisp when scaled up — counts. The three below go from
+  "one line of CSS" to "one element pretending to be a whole picture."</p>
+
+  <!-- ============ TECHNIQUE 1 ============ -->
+  <h2>1. The pragmatic one: <code>image-rendering: pixelated</code></h2>
+  <div class="card">
+    <span class="tag">1 line of CSS</span>
+    <p>This isn't drawing pixels in CSS so much as telling the browser <em>"don't blur my pixels
+    when you scale them."</em> Take a small image (or SVG, or canvas) and blow it up. Normally the
+    browser smooths it into mush. One property stops that:</p>
+    <pre>img { image-rendering: pixelated; }</pre>
+    <div class="demo-row">
+      <div>
+        <img id="p-smooth" width="128" height="128" alt="smooth scaled">
+        <div class="demo-label">default (blurry when scaled)</div>
+      </div>
+      <div>
+        <img id="p-crisp" width="128" height="128" style="image-rendering:pixelated" alt="crisp scaled">
+        <div class="demo-label">image-rendering: pixelated (crisp)</div>
+      </div>
+    </div>
+    <p style="margin-top:14px">Same 8&times;8 image, scaled 16&times;. This is the workhorse — it's why
+    your game already looks crisp, and it's the property that makes the <em>other two</em> techniques
+    below stay sharp too. If you only remember one thing, remember this line.</p>
+  </div>
+
+  <!-- ============ TECHNIQUE 2 ============ -->
+  <h2>2. The literal one: a grid of <code>&lt;div&gt;</code>s</h2>
+  <div class="card">
+    <span class="tag">most intuitive</span>
+    <p>The most honest approach: make one <code>&lt;div&gt;</code> per pixel and color each with
+    <code>background</code>. A CSS <code>grid</code> lays them out in rows and columns. It's a lot of
+    elements (192 for Stefan), but conceptually it's dead simple — you're literally building the
+    picture square by square.</p>
+    <div class="demo-row">
+      <div>
+        <div id="grid-demo" class="stage"></div>
+        <div class="demo-label">Stefan, built from <span id="grid-count"></span> &lt;div&gt; pixels</div>
+      </div>
+    </div>
+    <p style="margin-top:14px">Great for learning and for small sprites. The downside is element
+    count: a full scene of these can get heavy for the browser. Which leads to the clever trick…</p>
+  </div>
+
+  <!-- ============ TECHNIQUE 3 ============ -->
+  <h2>3. The clever one: one element + <code>box-shadow</code></h2>
+  <div class="card">
+    <span class="tag">what your game uses</span>
+    <p>Here's the magician's trick. A <code>box-shadow</code> can be offset to any position — and you
+    can stack <em>as many shadows as you want</em> on a single element, comma-separated. So take one
+    tiny 8&times;8 dot, and give it one shadow per pixel, each offset to its spot and tinted its color.
+    <strong>One element becomes an entire picture.</strong></p>
+    <pre>.dot {
+  width: 8px; height: 8px;      /* one pixel */
+  background: transparent;       /* the dot itself stays invisible */
+  box-shadow:
+     16px 24px 0 0 #e8c86a,      /* a blonde pixel at (col 2, row 3) */
+     24px 24px 0 0 #e8c86a,      /* …another beside it… */
+     /* …one line per lit pixel — your game generates these from an ASCII map */ ;
+}</pre>
+    <div class="demo-row">
+      <div>
+        <div id="shadow-demo" class="stage"></div>
+        <div class="demo-label">Stefan — a single dot wearing <span id="shadow-count"></span> box-shadows</div>
+      </div>
+      <div>
+        <div id="shadow-reveal" class="stage"></div>
+        <div class="demo-label">the actual element (the 1 real dot) is circled</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="toggle-reveal">Toggle: show the single real element</button>
+      <div style="margin-top:12px">
+        Pixel size: <input id="zoom" type="range" min="3" max="16" value="8">
+        <span class="pill" id="zoom-val">8px</span> — drag it: the sprite rescales and stays perfectly crisp.
+      </div>
+    </div>
+    <p style="margin-top:16px">This is the exact technique now living in <code>stefan.html</code>. Your
+    <code>spriteShadow()</code> function walks the ASCII pixel map and builds that giant comma-separated
+    string — one shadow per lit character, skipping the transparent <code>.</code> cells. The
+    <span class="pill">whole cast is five tiny dots</span> wearing a few hundred shadows between them.</p>
+  </div>
+
+  <h2>So… which should you use?</h2>
+  <div class="card">
+    <p><strong>For your game:</strong> the box-shadow trick (#3) — it kept everything in one
+    self-contained file with zero image assets, which was the whole portability goal. And it doubles as
+    a genuinely cool thing to have hand-rolled.</p>
+    <p><strong>In general:</strong> reach for <code>image-rendering: pixelated</code> on a real PNG/SVG
+    (#1) the moment you have actual art files — it's the least code and scales to detailed images that
+    would be absurd as box-shadows. The grid-of-divs (#2) is best kept for teaching and truly tiny
+    icons. Box-shadow (#3) shines exactly where you used it: small sprites, no external files.</p>
+    <p style="margin-bottom:0">A rule of thumb: <em>hand-code the pixels</em> (2 or 3) while art is
+    placeholder and you want zero dependencies; <em>switch to real image files</em> (1) once you're
+    drawing in Procreate. That's precisely the path the Art Swap Guide lays out.</p>
+  </div>
+
+  <div class="foot">
+    Live-built in your browser from Stefan's 12&times;16 pixel map — the same data that draws him in the
+    game. View source on this file to see all three techniques fully commented.
+  </div>
+
+</div>
+
+<script>
+  // Stefan's pixel map + palette — copied straight from stefan.html so the demos
+  // render the identical sprite the game does.
+  const STEFAN = [
+    "...HHHHHH...","..HHHHHHHH..","..HssssssH..","..ssssssss..",
+    "..sesssess..","...ssssss...","...KKKKKK...","..KKKKKKKK..",
+    "s.KKKKKKKK.s","s.KKKKKKKK.s","..KKKKKKKK..","...KKKKKK...",
+    "...KK..KK...","...KK..KK...","...kk..kk...","..kkk..kkk.."
+  ];
+  const PAL = {
+    s:"#e6be96", e:"#1e1923", H:"#e8c86a", K:"#1a1a1e", k:"#282830"
+  };
+  const COLS = STEFAN[0].length, ROWS = STEFAN.length;
+
+  // ---------- TECHNIQUE 1: tiny canvas -> data URL, shown smooth vs pixelated ----------
+  (function buildTech1() {
+    const cv = document.createElement("canvas");
+    cv.width = COLS; cv.height = ROWS;
+    const ctx = cv.getContext("2d");
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++) {
+        const c = PAL[STEFAN[y][x]];
+        if (c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+      }
+    const url = cv.toDataURL();
+    document.getElementById("p-smooth").src = url;   // scaled up, browser blurs it
+    document.getElementById("p-crisp").src  = url;   // same url, but CSS keeps it crisp
+  })();
+
+  // ---------- TECHNIQUE 2: one real <div> per pixel, laid out with CSS grid ----------
+  function buildGrid(px) {
+    const host = document.getElementById("grid-demo");
+    host.className = "grid-sprite stage";
+    host.style.gridTemplateColumns = "repeat(" + COLS + ", " + px + "px)";
+    host.style.gridTemplateRows    = "repeat(" + ROWS + ", " + px + "px)";
+    host.innerHTML = "";
+    let count = 0;
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++) {
+        const cell = document.createElement("div");
+        const c = PAL[STEFAN[y][x]];
+        cell.style.background = c || "transparent";
+        host.appendChild(cell);
+        if (c) count++;
+      }
+    document.getElementById("grid-count").textContent = (COLS * ROWS);
+    return count;
+  }
+  buildGrid(8);
+
+  // ---------- TECHNIQUE 3: ONE dot + a box-shadow per lit pixel ----------
+  // This is the same idea as spriteShadow() in stefan.html.
+  function shadowString(px) {
+    const parts = [];
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++) {
+        const c = PAL[STEFAN[y][x]];
+        if (c) parts.push((x * px) + "px " + (y * px) + "px 0 0 " + c);
+      }
+    return parts.join(",");
+  }
+
+  let revealed = false;
+  function buildShadow(px) {
+    // main sprite
+    const host = document.getElementById("shadow-demo");
+    host.style.width  = (COLS * px) + "px";
+    host.style.height = (ROWS * px) + "px";
+    host.className = "shadow-sprite stage";
+    host.innerHTML = '<div class="dot"></div>';
+    const dot = host.firstChild;
+    dot.style.width = px + "px"; dot.style.height = px + "px";
+    const shadow = shadowString(px);
+    dot.style.boxShadow = shadow;
+    document.getElementById("shadow-count").textContent = shadow.split(",").length;
+
+    // "reveal" copy: identical, but we highlight the one true element
+    const rev = document.getElementById("shadow-reveal");
+    rev.style.width  = (COLS * px) + "px";
+    rev.style.height = (ROWS * px) + "px";
+    rev.className = "shadow-sprite stage";
+    rev.innerHTML = '<div class="dot"></div>';
+    const rdot = rev.firstChild;
+    rdot.style.width = px + "px"; rdot.style.height = px + "px";
+    rdot.style.boxShadow = shadow;
+    applyReveal(rdot);
+  }
+  function applyReveal(rdot) {
+    if (revealed) {
+      rdot.style.outline = "2px solid #ff4d6d";
+      rdot.style.outlineOffset = "1px";
+      rdot.style.background = "rgba(255,77,109,0.35)";
+    } else {
+      rdot.style.outline = "none";
+      rdot.style.background = "transparent";
+    }
+  }
+
+  document.getElementById("toggle-reveal").addEventListener("click", function () {
+    revealed = !revealed;
+    buildShadow(currentPx);
+  });
+
+  let currentPx = 8;
+  buildShadow(currentPx);
+
+  document.getElementById("zoom").addEventListener("input", function (e) {
+    currentPx = Number(e.target.value);
+    document.getElementById("zoom-val").textContent = currentPx + "px";
+    buildGrid(currentPx);
+    buildShadow(currentPx);
+  });
+</script>
+</body>
+</html>
