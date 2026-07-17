@@ -184,6 +184,76 @@
       border-color: #d99a4e;
     }
 
+    /* ===== ENDING CELEBRATION: confetti + a retro banner + a sprite bounce ===== */
+
+    /* The confetti layer sits over the art but ignores clicks. Empty (and so
+       invisible) on every normal scene; JS fills it with squares on endings. */
+    #fx {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* One confetti square. Its color, x-position, size, speed and start delay
+       are all set inline by JS so every piece falls differently. */
+    .confetti {
+      position: absolute;
+      top: -16px;
+      width: 8px;
+      height: 8px;
+      opacity: 0;
+      animation: fall linear infinite;
+    }
+
+    @keyframes fall {
+      0%   { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(270px) rotate(360deg); opacity: 1; }
+    }
+
+    /* The big ending title. Hidden by default; shown (display flipped in JS)
+       with a punchy pop-in, then a slow glowing pulse — arcade "YOU WIN" energy. */
+    #endTitle {
+      position: absolute;
+      top: 16px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      display: none;                 /* flipped to "block" on endings */
+      z-index: 3;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #ffd76a;
+      /* stacked hard shadows = chunky retro outline, no blur */
+      text-shadow: 2px 2px 0 #7a3c8c, -2px 2px 0 #7a3c8c,
+                   2px -2px 0 #7a3c8c, -2px -2px 0 #7a3c8c, 0 4px 0 #2a1030;
+      animation: pop 0.5s cubic-bezier(.2,1.4,.4,1) 1, glow 1.6s ease-in-out infinite 0.5s;
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(0.2); opacity: 0; }
+      70%  { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes glow {
+      0%, 100% { filter: brightness(1);   }
+      50%      { filter: brightness(1.35); }
+    }
+
+    /* When the stage is in "ending" mode, make the cast celebrate with a bounce.
+       nth-child staggers them so they don't bob in lockstep. */
+    #stage.ending .char.sprite { animation: bounce 0.55s ease-in-out infinite alternate; }
+    #stage.ending .char.sprite:nth-child(2) { animation-delay: 0.18s; }
+    #stage.ending .char.sprite:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes bounce {
+      0%   { transform: translateY(0);     }
+      100% { transform: translateY(-14px); }
+    }
+
     /* THE MUTE TOGGLE: always visible, pinned to the top-right of the game. */
     #mute {
       position: absolute;
@@ -212,6 +282,8 @@
     <div id="stage">
       <div id="bg"></div>
       <div id="chars"></div>
+      <div id="fx"></div>              <!-- confetti layer, only on endings -->
+      <div id="endTitle"></div>        <!-- big retro ending banner -->
     </div>
     <div id="textbox">
       <div id="dj"></div>
@@ -243,10 +315,10 @@
     // '.' means "transparent" (no pixel drawn), so the background shows through.
     const PAL = {
       s: "#e6be96", e: "#1e1923",                 // skin, eyes
-      H: "#e8c86a", K: "#1a1a1e", k: "#282830",   // stefan: blonde, black shirt/shade
-      B: "#78503a", p: "#c98fb0", j: "#3a3050",   // maria:  brown hair, pink shirt, jeans
-      g: "#4a3a2a", G: "#8fb06a", o: "#3a4a2a",   // greg:   brown hair, green shirt, green pants
-      c: "#c9873f", C: "#965a28", w: "#f0e1cd",   // penny:  orange, orange-shade, cream belly
+      H: "#e8c86a", K: "#1a1a1e", k: "#282830",   // stefan & greg: blonde, black shirt/shade
+      B: "#bf6b36", p: "#c98fb0", j: "#3a3050",   // maria:  copper hair, pink shirt, jeans
+      g: "#4a3a2a", d: "#96653f",                 // greg:   dark-brown hair, brown skin
+      c: "#96969e", C: "#2d2d34", w: "#f5f5f8",   // penny:  grey coat, black stripe, white paws
       a: "#7de0a0", A: "#5ab478"                  // alien:  green, green-shade
     };
 
@@ -260,11 +332,11 @@
         "s.KKKKKKKK.s","s.KKKKKKKK.s","..KKKKKKKK..","...KKKKKK...",
         "...KK..KK...","...KK..KK...","...kk..kk...","..kkk..kkk.."
       ]},
-      penny:  { color: "#c9873f", label: "PENNY", px: [
-        "............",".cc....cc...",".ccc..ccc...",".cccccccc...",
-        ".cceccecc...",".cccccccc...",".ccCccCcc...","cccccccccc..",
-        "cwwwwwwwwc..","cwwwwwwwwc..","cwwwwwwwwc..","ccwwwwwwcc..",
-        "cc.cc.cc....",".cc.cc.cc...","........cCC.",".........cC."
+      penny:  { color: "#c9873f", label: "PENNY", px: [   // grey tabby, white paws
+        "............",".cc....cc...",".cCc..cCc...",".cccccccc...",
+        ".cCccCcCc...",".cceccecc...",".cccwwccc...","cccccccccc..",
+        "cCccccccCc..","cccwwwwccc..","cCccccccCc..","cccccccccc..",
+        "cc.cc.cc....","ww.ww.ww....",".......ccCC.","............"
       ]},
       maria:  { color: "#c98fb0", label: "MARIA", px: [
         "...BBBBBB...","..BBBBBBBB..","..BssssssB..","..ssssssss..",
@@ -272,11 +344,11 @@
         "s.pppppppp.s","s.pppppppp.s","..pppppppp..","...pppppp...",
         "...pp..pp...","...pp..pp...","...jj..jj...","..jjj..jjj.."
       ]},
-      greg:   { color: "#8fb06a", label: "GREG", px: [   // salad-green, naturally
-        "...gggggg...","..gggggggg..","..gssssssg..","..ssssssss..",
-        "..sesssess..","...ssssss...","...GGGGGG...","..GGGGGGGG..",
-        "s.GGGGGGGG.s","s.GGGGGGGG.s","..GGGGGGGG..","...GGGGGG...",
-        "...GG..GG...","...GG..GG...","...oo..oo...","..ooo..ooo.."
+      greg:   { color: "#8fb06a", label: "GREG", px: [   // brown skin, all black
+        "...gggggg...","..gggggggg..","..gddddddg..","..dddddddd..",
+        "..dedddedd..","...dddddd...","...KKKKKK...","..KKKKKKKK..",
+        "d.KKKKKKKK.d","d.KKKKKKKK.d","..KKKKKKKK..","...KKKKKK...",
+        "...KK..KK...","...KK..KK...","...kk..kk...","..kkk..kkk.."
       ]},
       alien:  { color: "#7de0a0", label: "???", px: [
         ".....aa.....","....a..a....",".....aa.....","...aaaaaa...",
@@ -383,6 +455,7 @@
         bg: "foulk_invaded",
         chars: ["stefan"],
         ending: true,
+        title: "\u2605 MIC DROP \u2605",
         music: "win",
         sting: "ohhh",
         dj: "*OHHH sting* FOLKS. That scream just lit up every phone line in the building. Absolutely legendary.",
@@ -393,6 +466,7 @@
         bg: "foulk_invaded",
         chars: ["stefan", "greg"],
         ending: true,
+        title: "CO-OP CLEAR!",
         music: "win",
         sting: "stinger",
         dj: "Two-player mode for the WIN! That's a co-op dub, baby. Greg, the salad's on us today.",
@@ -403,6 +477,7 @@
         bg: "foulk_rec",
         chars: ["stefan", "alien"],
         ending: true,
+        title: "\u2726 SECRET ENDING \u2726",
         music: "win",
         dj: "Heartwarming update out of Foulk — turns out they just wanted to retire in peace. 106.9 approves this wholesome content.",
         text: "ENDING 1C — 'They Just Wanted to Retire.' They weren't invading — they picked Foulk to live out their days in peace, and got spooked. Your kindness (and a mic-drop song) wins them over. They stay on as the home's most interesting residents. It's you and Greg's secret.",
@@ -412,6 +487,7 @@
         bg: "foulk_break",
         chars: ["stefan", "greg"],
         ending: true,
+        title: "SURVIVED",
         music: "soft",
         dj: "Sometimes just making it home IS the highlight reel. We respect the survivors. Go get that Nanu's, king.",
         text: "ENDING 1D — 'Lived to Tell It.' You and Greg hunker in the supply closet with the real residents, eating cold pizza until it quiets down. You never learn what happened. You clock out shaken and order Nanu's Chicken. Best worst day ever.",
@@ -466,6 +542,7 @@
         bg: "stage",
         chars: ["stefan"],
         ending: true,
+        title: "\u2605 CHAMPIONS \u2605",
         music: "win",
         sting: "stinger",
         dj: "*AIRHORN x3* WE HAVE A CHAMPION! Scarpenters, you're opening for AUGUST BURNS RED. History, live on 106.9!",
@@ -476,6 +553,7 @@
         bg: "stage",
         chars: ["stefan", "maria"],
         ending: true,
+        title: "TWO OF US \u2665",
         music: "win",
         sting: "stinger",
         dj: "A TEAM victory! Two people who met on a music app, now on stage together. We're not crying, YOU'RE crying.",
@@ -486,6 +564,7 @@
         bg: "nanus",
         chars: ["stefan", "maria"],
         ending: true,
+        title: "BEST DAY OFF",
         music: "soft",
         dj: "Second place, but FIRST in our hearts. Also — Nanu's Chicken? Elite choice. No notes. *chef's kiss sting*",
         text: "ENDING 2C — 'Second Place, Best Day.' You chased the funniest option all day — Nanu's Chicken, chaos, detours — and lost the prize by a hair. Worth it. Perfect day off.",
@@ -495,6 +574,7 @@
         bg: "barcade",
         chars: ["stefan", "penny"],
         ending: true,
+        title: "PENNY WINS!",
         music: "soft",
         sting: "airhorn",
         dj: "BREAKING: 106.9's new station mascot is... a CAT. Penny, the booth is yours. This is the timeline we deserve.",
@@ -504,12 +584,15 @@
     };
 
     // 2) THE LOGIC: grab the areas we'll be updating, once.
-    const gameEl    = document.getElementById("game");
-    const bgEl      = document.getElementById("bg");
-    const charsEl   = document.getElementById("chars");
-    const textEl    = document.getElementById("text");
-    const choicesEl = document.getElementById("choices");
-    const djEl      = document.getElementById("dj");
+    const gameEl     = document.getElementById("game");
+    const bgEl       = document.getElementById("bg");
+    const charsEl    = document.getElementById("chars");
+    const textEl     = document.getElementById("text");
+    const choicesEl  = document.getElementById("choices");
+    const djEl       = document.getElementById("dj");
+    const stageEl    = document.getElementById("stage");
+    const fxEl       = document.getElementById("fx");
+    const endTitleEl = document.getElementById("endTitle");
 
     // Typewriter state:
     let typeTimer     = null;
@@ -577,6 +660,46 @@
       }
     }
 
+    // 3c) THE ENDING CELEBRATION: on an ending scene, drop the big retro title,
+    //     rain confetti, and let the sprites bounce (the bounce is pure CSS,
+    //     driven by the `.ending` class we add to the stage). Everywhere else,
+    //     this tears the celebration down so normal scenes stay calm.
+    const CONFETTI_COLORS = ["#ffd76a", "#c98fb0", "#8fb06a", "#8a74c0", "#f5f5f8", "#d99a4e"];
+
+    function celebrate(scene) {
+      if (scene.ending) {
+        stageEl.classList.add("ending");        // triggers the CSS sprite bounce
+
+        // the banner: retro title if the scene named one, else a default
+        endTitleEl.textContent = scene.title || "THE END";
+        endTitleEl.style.display = "block";
+        // restart the pop/glow animation each time by re-triggering the node
+        endTitleEl.style.animation = "none";
+        void endTitleEl.offsetWidth;            // force reflow so the anim replays
+        endTitleEl.style.animation = "";
+
+        // confetti: gentler shower on the soft (bittersweet) endings
+        const count = scene.music === "soft" ? 24 : 48;
+        fxEl.innerHTML = "";
+        for (let i = 0; i < count; i++) {
+          const bit = document.createElement("div");
+          bit.className = "confetti";
+          bit.style.left            = Math.random() * 100 + "%";
+          bit.style.background      = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+          bit.style.animationDuration = (1.6 + Math.random() * 1.8) + "s";
+          bit.style.animationDelay    = (Math.random() * 2) + "s";
+          const size = 6 + Math.floor(Math.random() * 5);
+          bit.style.width  = size + "px";
+          bit.style.height = size + "px";
+          fxEl.appendChild(bit);
+        }
+      } else {
+        stageEl.classList.remove("ending");
+        endTitleEl.style.display = "none";
+        fxEl.innerHTML = "";
+      }
+    }
+
     // 4) THE TYPEWRITER.
     function typeText(text, onDone) {
       clearInterval(typeTimer);
@@ -640,6 +763,7 @@
       const scene = STORY[id];
       showArt(scene);
       showDJ(scene);
+      celebrate(scene);             // confetti + banner + bounce on endings only
       setMusic(scene.music);        // switch mood music if this scene names one
       if (scene.sting) sfx(scene.sting);   // play a one-shot meme sting if any
       choicesEl.innerHTML = "";
@@ -901,6 +1025,7 @@
       musicGain = actx.createGain();
       musicGain.gain.value = 0.18;            // music sits under the SFX
       musicGain.connect(master);
+      if (actx.state === "suspended") actx.resume();  // some browsers start it paused
       if (currentTrack) playTrack(currentTrack);  // start whatever mood we're in
     }
 
@@ -989,6 +1114,19 @@
     });
 
     /* ================================================ */
+
+    // UNLOCK AUDIO ON THE FIRST GESTURE — anywhere, any input. Browsers block
+    // sound until the user interacts, so the music can't legally start before
+    // the very first click/keypress. We listen in the CAPTURE phase (the `true`)
+    // so this fires BEFORE the choice buttons' stopPropagation can swallow the
+    // event — otherwise only the mute button ever unlocked sound. Once actx
+    // exists, initAudio() is a no-op, so leaving these attached is harmless.
+    function unlockAudio() {
+      initAudio();
+      if (actx && actx.state === "suspended") actx.resume();
+    }
+    window.addEventListener("pointerdown", unlockAudio, true);
+    window.addEventListener("keydown",     unlockAudio, true);
 
     // 9) KICK IT OFF.
     showScene("start");
