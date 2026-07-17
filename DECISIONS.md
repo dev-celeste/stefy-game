@@ -39,6 +39,12 @@
 
 ## Change Log
 
+### 2026-07-17 — Stages 2–7 built; full story content in
+- Engine grew stage by stage: data-driven scene rendering (2), choices + navigation and a bigger screen via `transform: scale(1.25)` keeping internal 640×480 (3), typewriter effect (4), click-to-skip (5), layered art stage with BG/CHAR palettes + placeholder character blocks (6).
+- **Stage 7:** wrote the entire story graph — prologue, morning fork, Branch 1 and Branch 2, all 8 endings — plus an ending/`Play again` restart mechanic. Branch 2's DDR step is a **placeholder choice** until the dedicated minigame stage.
+- Validated: 21 scenes, 8 reachable endings, no dead links/orphans.
+- Remaining planned stages: DDR minigame → DJ narrator → sound (finale).
+
 ### 2026-07-15 — Switched to a staged, learn-as-we-build approach
 - Maria (junior dev) wants to understand the codebase thoroughly, so we're **building from scratch in small, explained stages** (deep, line-by-line explanations) instead of one big prototype.
 - The full prototype was set aside as a private reference (kept out of the repo) to keep each stage consistent with the target architecture.
