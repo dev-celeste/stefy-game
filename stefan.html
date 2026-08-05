@@ -51,6 +51,71 @@
       image-rendering: pixelated; /* crisp, blocky arrows */
     }
 
+    /* ---- TITLE SCREEN ---- a full-screen retro attract screen. Visible on
+       load; hidden once the player presses Enter / clicks to start. */
+    #title {
+      position: absolute;
+      inset: 0;
+      z-index: 20;                /* above everything else in #game */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: radial-gradient(circle at 50% 38%, #24143a 0%, #120a1e 60%, #0a0612 100%);
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    /* drifting pixel starfield behind the title */
+    #stars { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute;
+      width: 3px; height: 3px;
+      background: #fff;
+      image-rendering: pixelated;
+      animation: starTwinkle var(--d, 3s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+    }
+    @keyframes starTwinkle {
+      0%, 100% { opacity: 0.2; transform: translateY(0); }
+      50%      { opacity: 1;   transform: translateY(7px); }
+    }
+
+    /* the stacked title lines bob together and shimmer through the color wheel */
+    #titleInner {
+      position: relative;
+      z-index: 1;
+      margin-top: 78px;
+      text-align: center;
+      animation: titleBob 1.9s ease-in-out infinite alternate,
+                 titleShimmer 6s linear infinite;
+    }
+    @keyframes titleBob     { from { transform: translateY(0); }      to { transform: translateY(-11px); } }
+    @keyframes titleShimmer { from { filter: hue-rotate(0deg); }      to { filter: hue-rotate(360deg); } }
+
+    /* each line is a fixed-size box; a single 1px "dot" child paints all its
+       pixels via box-shadow (same trick as the character sprites). */
+    .tline { position: relative; margin: 0 auto; }
+    #tPresents { margin-bottom: 22px; }
+    #tStefans  { margin-bottom: 14px; }
+    .tline .dot {
+      position: absolute;
+      top: 0; left: 0;
+      background: transparent;    /* the element itself is invisible... */
+      /* ...width/height and box-shadow are set from JS (one shadow per pixel) */
+    }
+
+    /* blinking "PRESS ENTER TO START" prompt near the bottom */
+    #pressStart {
+      position: absolute;
+      bottom: 66px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      animation: pressBlink 1.05s steps(1, end) infinite;
+    }
+    @keyframes pressBlink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+
     /* THE ART STAGE: holds the background and character layers. */
     #stage {
       position: relative;
@@ -292,6 +357,18 @@
     </div>
     <div id="ddrWrap">
       <canvas id="ddrCanvas" width="640" height="480"></canvas>
+    </div>
+
+    <!-- TITLE SCREEN: shown first; dismiss with Enter/click to start the game
+         (that gesture also unlocks the audio, so music starts immediately). -->
+    <div id="title">
+      <div id="stars"></div>
+      <div id="titleInner">
+        <div class="tline" id="tPresents"><i class="dot"></i></div>
+        <div class="tline" id="tStefans"><i class="dot"></i></div>
+        <div class="tline" id="tBigday"><i class="dot"></i></div>
+      </div>
+      <div class="tline" id="pressStart"><i class="dot"></i></div>
     </div>
   </div>
 
@@ -1523,8 +1600,103 @@
     window.addEventListener("pointerdown", unlockAudio, true);
     window.addEventListener("keydown",     unlockAudio, true);
 
-    // 9) KICK IT OFF.
-    showScene("start");
+    /* ================= TITLE SCREEN ================= */
+    // A tiny 5x7 PIXEL FONT — just the glyphs the title needs. Each glyph is 7
+    // rows of 5 columns; "#" = a lit pixel, "." = empty. We paint a whole line
+    // of text with the SAME box-shadow trick as the character sprites: one 1px
+    // dot element wears one shadow per lit pixel.
+    const FONT = {
+      " ": ["...","...","...","...","...","...","..."],
+      "0": [".###.","#...#","#..##","#.#.#","##..#","#...#",".###."],
+      "1": ["..#..",".##..","..#..","..#..","..#..","..#..",".###."],
+      "6": ["..##.",".#...","#....","####.","#...#","#...#",".###."],
+      "9": [".###.","#...#","#...#",".####","....#","...#.",".##.."],
+      ".": [".....",".....",".....",".....",".....",".##..",".##.."],
+      "'": [".##..",".##..",".#...",".....",".....",".....","....."],
+      "A": [".###.","#...#","#...#","#####","#...#","#...#","#...#"],
+      "B": ["####.","#...#","#...#","####.","#...#","#...#","####."],
+      "D": ["###..","#..#.","#...#","#...#","#...#","#..#.","###.."],
+      "E": ["#####","#....","#....","####.","#....","#....","#####"],
+      "F": ["#####","#....","#....","####.","#....","#....","#...."],
+      "G": [".###.","#...#","#....","#.###","#...#","#...#",".###."],
+      "I": [".###.","..#..","..#..","..#..","..#..","..#..",".###."],
+      "N": ["#...#","##..#","##..#","#.#.#","#..##","#..##","#...#"],
+      "O": [".###.","#...#","#...#","#...#","#...#","#...#",".###."],
+      "P": ["####.","#...#","#...#","####.","#....","#....","#...."],
+      "R": ["####.","#...#","#...#","####.","#.#..","#..#.","#...#"],
+      "S": [".####","#....","#....",".###.","....#","....#","####."],
+      "T": ["#####","..#..","..#..","..#..","..#..","..#..","..#.."],
+      "Y": ["#...#","#...#",".#.#.","..#..","..#..","..#..","..#.."]
+    };
+    const GLYPH_H = 7;
+
+    // Paint one line of pixel text into a .tline box: set the child dot's
+    // box-shadow (one shadow per lit pixel) and size the box to the text.
+    function renderLine(el, str, px, color) {
+      const dot = el.querySelector(".dot");
+      const parts = [];
+      let cx = 0;                              // running x position, in columns
+      const s = str.toUpperCase();
+      for (let i = 0; i < s.length; i++) {
+        const g = FONT[s[i]] || FONT[" "];
+        for (let y = 0; y < g.length; y++)
+          for (let x = 0; x < g[y].length; x++)
+            if (g[y][x] === "#")
+              parts.push((cx + x) * px + "px " + y * px + "px 0 0 " + color);
+        cx += g[0].length + 1;                 // glyph width + 1 column of spacing
+      }
+      const cols = cx - 1;                      // drop the trailing spacer column
+      dot.style.width  = px + "px";
+      dot.style.height = px + "px";
+      dot.style.boxShadow = parts.join(",");
+      el.style.width  = (cols * px) + "px";
+      el.style.height = (GLYPH_H * px) + "px";
+    }
+
+    // Sprinkle a drifting pixel starfield behind the title.
+    function buildStars(n) {
+      let html = "";
+      for (let i = 0; i < n; i++) {
+        const x = (Math.random() * 100).toFixed(2);
+        const y = (Math.random() * 100).toFixed(2);
+        const d = (2.2 + Math.random() * 3).toFixed(2);
+        const delay = (Math.random() * 3).toFixed(2);
+        const sz = 2 + Math.floor(Math.random() * 2);
+        html += '<i class="star" style="left:' + x + '%;top:' + y + '%;width:'
+              + sz + 'px;height:' + sz + 'px;--d:' + d + 's;--delay:' + delay + 's"></i>';
+      }
+      document.getElementById("stars").innerHTML = html;
+    }
+
+    // Paint the whole title: the small "106.9 PRESENTS" line, the big stacked
+    // "STEFAN'S / BIG DAY", the blinking prompt, and the stars. Warm gold base
+    // color; the CSS hue-rotate animation makes it shimmer through the rainbow.
+    function buildTitle() {
+      const GOLD = "#ffcf5a";
+      renderLine(document.getElementById("tPresents"),  "106.9 PRESENTS",       4, GOLD);
+      renderLine(document.getElementById("tStefans"),   "STEFAN'S",             8, GOLD);
+      renderLine(document.getElementById("tBigday"),    "BIG DAY",              8, GOLD);
+      renderLine(document.getElementById("pressStart"), "PRESS ENTER TO START", 3, "#8fe0c0");
+      buildStars(48);
+    }
+
+    // 9) KICK IT OFF — show the title, wait for the player. Pressing Enter or
+    //    clicking starts the game; because that's a real user gesture, the
+    //    audio unlocks and the first scene's music plays right away.
+    const titleEl = document.getElementById("title");
+    function startGame() {
+      window.removeEventListener("keydown", titleKey);
+      titleEl.removeEventListener("click", startGame);
+      unlockAudio();                 // we have a gesture now — sound is allowed
+      titleEl.style.display = "none";
+      showScene("start");            // first scene sets music "cozy" → it plays
+    }
+    function titleKey(e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startGame(); }
+    }
+    window.addEventListener("keydown", titleKey);
+    titleEl.addEventListener("click", startGame);
+    buildTitle();                    // paint the pixel-art title + starfield
   </script>
 </body>
 </html>
