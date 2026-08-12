@@ -411,7 +411,7 @@
         "s.KKKKKKKK.s","s.KKKKKKKK.s","..KKKKKKKK..","...KKKKKK...",
         "...KK..KK...","...KK..KK...","...kk..kk...","..kkk..kkk.."
       ]},
-      penny:  { color: "#c9873f", label: "PENNY", px: [   // grey tabby, white paws
+      penny:  { color: "#c9873f", label: "PENNY", scale: 0.5, px: [   // half-size: he's a cat
         "............",".cc....cc...",".cCc..cCc...",".cccccccc...",
         ".cCccCcCc...",".cceccecc...",".cccwwccc...","cccccccccc..",
         "cCccccccCc..","cccwwwwccc..","cCccccccCc..","cccccccccc..",
@@ -760,12 +760,12 @@
     // spriteShadow: turn an ASCII pixel grid into ONE giant box-shadow string.
     // The trick: a single 8x8 dot element, then one shadow per lit pixel that
     // clones that dot to (x, y). Transparent cells ('.') are simply skipped.
-    function spriteShadow(grid) {
+    function spriteShadow(grid, px) {
       const parts = [];
       for (let y = 0; y < grid.length; y++) {
         for (let x = 0; x < grid[y].length; x++) {
           const color = PAL[grid[y][x]];        // undefined for '.', so skipped
-          if (color) parts.push((x * PX) + "px " + (y * PX) + "px 0 0 " + color);
+          if (color) parts.push((x * px) + "px " + (y * px) + "px 0 0 " + color);
         }
       }
       return parts.join(",");
@@ -777,11 +777,18 @@
       scene.chars.forEach(function (name) {
         const info = CHAR[name];
         if (info.px) {                            // real sprite -> box-shadow art
+          const size = PX * (info.scale || 1);    // per-character zoom (Penny is smaller)
+          const cols = info.px[0].length;
+          const rows = info.px.length;
           const wrap = document.createElement("div");
           wrap.className = "char sprite";
+          wrap.style.width  = (cols * size) + "px";  // box = the sprite's exact footprint,
+          wrap.style.height = (rows * size) + "px";  // so flex-end keeps feet on the floor
           const dot = document.createElement("div");
           dot.className = "px";
-          dot.style.boxShadow = spriteShadow(info.px);
+          dot.style.width  = size + "px";            // the cloned pixel matches the spacing,
+          dot.style.height = size + "px";            // so shrinking stays crisp (no gaps)
+          dot.style.boxShadow = spriteShadow(info.px, size);
           wrap.appendChild(dot);
           charsEl.appendChild(wrap);
         } else {                                  // no sprite -> old colored block
