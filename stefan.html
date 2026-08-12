@@ -486,8 +486,8 @@
         dj: "Shoutout to the maintenance heroes clocking in today. Somebody get Greg a bigger salad. *bruh sting*",
         text: "You clock in. Greg's in the break room, aggressively eating a salad. 'Yo! You're late. Eat yo salad before I toss yo salad.' But something's off — Mr. Abernathy's hearing aid is emitting a weird signal, and a resident is watching the microwave like it's TV.",
         choices: [
-          { label: "Follow that whine — where's it coming from?", next: "b1_signal" },
-          { label: "Grab a flashlight and check it out together",  next: "b1_signal" }
+          { label: "Slip off alone and follow the whine",           next: "b1_signal" },
+          { label: "Grab flashlights and sweep the room with Greg",  next: "b1_lounge" }
         ]
       },
 
@@ -520,6 +520,39 @@
         sting: "bruh",
         dj: "Ooh, wrong note. The box did NOT like that. Maintenance, please proceed to the nearest exit. Calmly. Ish.",
         text: "You fumble the sequence and the box shrieks a burst of static that kills the basement lights. Greg's already on the stairs: 'TOOLS. We get the TOOLS now.' No more talking to it — time to be ready.",
+        choices: [
+          { label: "Grab everything that swings and clamps", next: "b1_toolup" }
+        ]
+      },
+      /* ---- Branch 1 ALT path: Sweep with Greg (rec room, rhythm jam) ---- */
+      b1_lounge: {
+        bg: "foulk_rec",
+        chars: ["stefan", "greg"],
+        music: "tense",
+        dj: "Two maintenance men, two flashlights, one haunted rec room. 106.9's advice? Whatever you do — do NOT split up. *bruh sting*",
+        text: "You and Greg sweep the rec room together, flashlights up. Every appliance is losing it — the TV, the microwave, Mr. Abernathy's hearing aid — all strobing the SAME pulse in sync, loud enough to feel in your teeth. Greg: 'They're all singin' the same song, bro.' If you can stomp the rhythm right back at them, you might jam the whole broadcast.",
+        choices: [
+          { label: "Stomp the pattern and jam the signal", minigame: { chart: "easy", clear: "b1_lounge_win", fail: "b1_lounge_fail" } },
+          { label: "Forget finesse — just kill the breaker", next: "b1_toolup" }
+        ]
+      },
+      b1_lounge_win: {
+        bg: "foulk_rec",
+        chars: ["stefan", "greg"],
+        sting: "ohhh",
+        dj: "*OHHH sting* The whole room went dark at once. Greg, that footwork was CERTIFIED. Somebody sign this man.",
+        text: "You match the pulse beat for beat until every screen stutters and dies together. Dead silence — then something in the hallway starts moving toward the racket you just made. Greg swallows: 'Okay. They HEARD that.' Time to find out who 'they' are.",
+        choices: [
+          { label: "Head deeper and see who's really 'living' here", next: "b1_investigate" },
+          { label: "Gear up first — just in case",                   next: "b1_toolup"     }
+        ]
+      },
+      b1_lounge_fail: {
+        bg: "foulk_rec",
+        chars: ["stefan", "greg"],
+        sting: "bruh",
+        dj: "Oof — lost the beat and the room LOST IT. Maintenance, that's a paddlin'. Go get your tools.",
+        text: "You drop the rhythm and every screen flares white, feeding back into a wall of sound that sends you both ducking for cover. Greg's already gone: 'NOPE. Tools. TOOLS.' No more finesse — time to be ready for whatever's coming down that hall.",
         choices: [
           { label: "Grab everything that swings and clamps", next: "b1_toolup" }
         ]
@@ -679,11 +712,11 @@
         bg: "barcade",
         chars: ["stefan", "maria"],
         music: "arcade",
-        dj: "Couples DDR?? 106.9 is OFFICIALLY rooting for you two. Hit those arrows in sync, lovebirds!",
-        text: "Same barcade, same DDR machine. Maria bumps your shoulder: 'Co-op?' Hit each arrow with the matching arrow key as it reaches the line.",
+        dj: "Plot twist — the straw-hat read points PAST the dance pad, to the dusty memory cabinet in the corner. Sync up, you two!",
+        text: "The One Piece read sends you deeper into the barcade, to a beat-up memory cabinet — four pads that flash a little sea-shanty rhythm you have to echo back. Maria cracks her knuckles: 'I'll call the pattern, you hit it. Team read, team win.' Watch the lights, then repeat the sequence.",
         choices: [
-          { label: "Co-op the dance with Maria",            minigame: { chart: "easy", clear: "end_2B", fail: "end_2C" } },
-          { label: "Detour to Nanu's first, wing it later", next: "end_2C" }
+          { label: "Echo the pattern, Maria calling the beats", minigame: { game: "signal", start: 2, target: 5, clear: "end_2B", fail: "end_2C" } },
+          { label: "Detour to Nanu's first, wing it later",      next: "end_2C" }
         ]
       },
 
