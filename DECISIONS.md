@@ -14,8 +14,8 @@
 **Story shape**
 - Title: **106.9 Presents: Stefan's Big Day**.
 - Shared cozy **prologue** → one fork: **go to work (Branch 1)** or **call out (Branch 2)**.
-- **Branch 1 — Invasion at Foulk:** aliens hiding among residents at the old folks home; Stefan's scream + handiness save the day. Mid-chapter **"Trace the Signal"** (boiler room + Signal Match minigame) sits before the investigate/toolup fork. 4 endings (1A Visions/Scream, 1B Co-op w/ Greg, 1C The Reveal—aliens retiring, 1D Lived to Tell It).
-- **Branch 2 — The 106.9 Riddle Hunt:** radio contest. Mid-chapter **"Tune the Dial"** (car radio + Tune minigame) → game/anime riddle → DDR minigame → finale. Grand prize = Scarpenters opens for August Burns Red. 4 endings (2A Champions, 2B Two of Us, 2C Second Place/Best Day, 2D Penny Goes Viral).
+- **Branch 1 — Invasion at Foulk:** aliens hiding among residents at the old folks home; Stefan's scream + handiness save the day. Mid-chapter **forks two ways** before the investigate/toolup fork: go alone → boiler room + **Signal Match**; sweep with Greg → rec-room (`b1_lounge`) + **DDR**. 4 endings (1A Visions/Scream, 1B Co-op w/ Greg, 1C The Reveal—aliens retiring, 1D Lived to Tell It).
+- **Branch 2 — The 106.9 Riddle Hunt:** radio contest. Mid-chapter **"Tune the Dial"** (car radio + Tune minigame) → game/anime riddle that **diverges by minigame**: gamer read → **DDR** (solo), anime read → **Signal Match** (co-op) → finale. Grand prize = Scarpenters opens for August Burns Red. 4 endings (2A Champions, 2B Two of Us, 2C Second Place/Best Day, 2D Penny Goes Viral).
 - Recurring **106.9 M&S DJ narrator** between beats.
 
 **Gameplay**
@@ -41,6 +41,17 @@
 ---
 
 ## Change Log
+
+### 2026-08-12 — True branches: choices at a fork now lead somewhere genuinely different
+- **The problem (Maria, playtest):** different decisions were funneling into the same next scene, "which takes away from the magic of choosing your adventure." Two offenders: at Foulk both options landed in the boiler room, and in the radio contest both riddle reads (gamer / anime) launched the same DDR minigame.
+- **Foulk (`b1_clockin`) split into two real paths:** "slip off alone and follow the whine" → the boiler room + **Signal Match** (as before); "sweep the room with Greg" → a brand-new rec-room scene **`b1_lounge`** (bg `foulk_rec`) with a **DDR** minigame and its own **`b1_lounge_win` / `b1_lounge_fail`** beats, before both paths reconverge on the investigate/toolup fork.
+- **Radio (`b2_riddle`) reads now diverge:** "gamer instinct" keeps the **DDR** machine (`b2_ddr_solo`); "anime brain" (`b2_ddr_team`) is **rerouted to Signal Match** — a memory game at a dusty barcade cabinet with Maria calling the pattern. Solo→Champions (2A) and co-op→Two of Us (2B) endings unchanged.
+- **Design rule going forward:** two choices *at the same point* should never lead to the same activity. Reusing a minigame *across the two mutually-exclusive branches* (Foulk vs Radio) is fine — you only ever see one branch per playthrough.
+- **Engine philosophy preserved:** no engine changes — only `STORY` data + one `minigame` reroute. Verified: syntax OK, 31 scenes, no missing targets, all reachable; jsdom drives both new paths and confirms Foulk→DDR and anime→Signal actually launch.
+
+### 2026-08-11 — Penny scaled down; retro title screen
+- **Penny is now half-size.** He was rendering as tall as the people. Added a per-character **`scale`** field read by `showArt` (`size = PX * (info.scale || 1)`), sizing both the sprite box and each pixel dot; `CHAR.penny` gets `scale: 0.5`. Cat-sized, still crisp, feet still on the floor. (One number — easy to drop to `0.375` for a third if he still reads big.)
+- **Title screen** added: retro pixel-art attract screen (box-shadow font, twinkling stars) + a start-gate — Enter or click hides the title, unlocks Web Audio, and calls `showScene("start")`. Solves the browser autoplay policy in one gesture.
 
 ### 2026-07-17 — Doubled the game: a new mid-chapter + minigame per branch
 - **Branch 1 gains "Trace the Signal"** (new `foulk_boiler` setting): the hearing-aid whine leads Stefan + Greg to a blinking alien junction box. New scenes `b1_signal` / `b1_signal_win` / `b1_signal_fail`; `b1_clockin` now routes through it into the existing investigate/toolup fork.
