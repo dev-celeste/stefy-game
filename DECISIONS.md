@@ -42,6 +42,10 @@
 
 ## Change Log
 
+### 2026-08-13 — Bugfix: Signal Match no longer hangs on no input
+- **Symptom (Maria, playtest):** in the pattern-repetition game, doing nothing didn't lose *or* advance — it just sat there. The "your turn" phase was driven only by key presses, so with no press there was no code path to fire.
+- **Fix:** the repeat phase now has a per-note countdown (`SIG_ANSWER_MS = 5s`) that resets on each correct press; stalling past it counts as a miss (routes to the `fail` scene, same as a wrong key). Added a draining timer bar under "YOUR TURN" so the pressure is visible. Covers both Signal Match spots (Foulk boiler + radio anime path). Verified in jsdom: idle now fails and advances.
+
 ### 2026-08-12 — True branches: choices at a fork now lead somewhere genuinely different
 - **The problem (Maria, playtest):** different decisions were funneling into the same next scene, "which takes away from the magic of choosing your adventure." Two offenders: at Foulk both options landed in the boiler room, and in the radio contest both riddle reads (gamer / anime) launched the same DDR minigame.
 - **Foulk (`b1_clockin`) split into two real paths:** "slip off alone and follow the whine" → the boiler room + **Signal Match** (as before); "sweep the room with Greg" → a brand-new rec-room scene **`b1_lounge`** (bg `foulk_rec`) with a **DDR** minigame and its own **`b1_lounge_win` / `b1_lounge_fail`** beats, before both paths reconverge on the investigate/toolup fork.

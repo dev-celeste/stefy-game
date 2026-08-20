@@ -1177,6 +1177,7 @@
     // Each lane gets its own pitch, so the playback sounds like a real Simon toy.
     const SIG_FREQ = { left: 330, down: 392, up: 494, right: 587 };
     const SIG_ON = 420, SIG_OFF = 200, SIG_STEP = SIG_ON + SIG_OFF;  // playback timing (ms)
+    const SIG_ANSWER_MS = 5000;  // your turn: seconds allowed per note (resets on each correct press)
 
     // Diamond layout for the four pads (arrows point outward from center).
     const SIG_POS = { up: [320, 120], left: [180, 235], right: [460, 235], down: [320, 350] };
@@ -1203,7 +1204,8 @@
         watchStart: performance.now(),
         lastIdx: -1,               // which playback step we last beeped
         flash: {},                 // per-lane press glow, like DDR
-        judge: ""                  // little status line
+        judge: "",                 // little status line
+        deadline: 0                // "repeat" phase: fail if now passes this (0 = not counting)
       };
       const start = cfg.start || 2;
       for (let i = 0; i < start; i++) signal.seq.push(randLane());
@@ -1224,6 +1226,7 @@
       if (lane === signal.seq[signal.inputIdx]) {          // correct next note
         beep(lane);
         signal.inputIdx++;
+        signal.deadline = performance.now() + SIG_ANSWER_MS; // fresh clock for the next note
         if (signal.inputIdx >= signal.seq.length) {        // echoed the whole round
           if (signal.seq.length >= signal.target) {         // ...at full length: WIN
             signal.judge = "LOCKED IN";
@@ -1261,7 +1264,15 @@
           if (idx >= signal.seq.length) {        // whole pattern shown -> your turn
             signal.phase = "repeat";
             signal.inputIdx = 0;
+            signal.deadline = now + SIG_ANSWER_MS;  // start the answer clock
           }
+        }
+      } else if (signal.phase === "repeat") {
+        if (now > signal.deadline) {           // stalled too long = miss
+          signal.judge = "TOO SLOW";
+          sfx("whiff");
+          endSignal(false);
+          return;
         }
       }
 
@@ -1286,6 +1297,15 @@
       c.font = "13px 'Courier New', monospace";
       c.fillText(watching ? "WATCH the lights..."
                           : "YOUR TURN \u2014 repeat it with the ARROW KEYS", 320, 62);
+
+      // your-turn countdown: a bar that drains toward the deadline
+      if (!watching && signal.deadline) {
+        const frac = Math.max(0, Math.min(1, (signal.deadline - now) / SIG_ANSWER_MS));
+        c.fillStyle = "#241d33";
+        c.fillRect(220, 72, 200, 6);                       // track
+        c.fillStyle = frac < 0.3 ? "#c96a6a" : "#8fb06a";  // reddens when time's short
+        c.fillRect(220, 72, 200 * frac, 6);                // remaining time
+      }
 
       // which lane, if any, is lit by the playback right now
       let liveLane = null;
