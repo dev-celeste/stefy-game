@@ -377,16 +377,88 @@
 
     // 0) ART PALETTES: names -> looks. Swap a color for an image URL later.
     const BG = {
-      bedroom:      "#2a2140",  // dim purple morning light
-      livingroom:   "#241f33",  // cozy apartment
-      foulk_break:  "#20303a",  // break room fluorescents
-      foulk_rec:    "#2a2233",  // rec room, something's off
-      foulk_boiler: "#182a2e",  // basement boiler room, cold teal glow
-      foulk_invaded:"#12212b",  // the invasion state (cold, alien)
-      barcade:      "#14121f",  // neon-dark barcade
-      car_radio:    "#1a1626",  // inside the car at dusk, dashboard glow
-      nanus:        "#3a2410",  // warm Nanu's Chicken glow
-      stage:        "#0d0d16"   // concert stage
+      // Layered CSS "scenes": each value is a stack of gradients painted onto #bg.
+      // In CSS `background`, the FIRST layer listed sits in FRONT; the LAST is the
+      // backdrop. Each layer reads as  <gradient> <position>/<size> <repeat>.
+      // No image files, no engine changes -- the engine still just does
+      // bgEl.style.background = BG[scene.bg].
+      bedroom:
+        "radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.42) 100%)," +               // vignette (front): darken edges for mood
+        "radial-gradient(58% 68% at 70% 44%, rgba(255,176,120,0.30), rgba(255,176,120,0) 62%) no-repeat," + // warm dawn light spilling from the window
+        "linear-gradient(180deg,#6f5f96 0%,#8d6c88 55%,#caa079 100%) 70% 24% / 15% 40% no-repeat," +        // window glass: purple sky warming to dawn at the sill
+        "linear-gradient(#39305a,#39305a) 70% 22% / 18.5% 47% no-repeat," +                                 // window frame slab (just behind the glass)
+        "linear-gradient(180deg,#1b1330 0%,#241a3c 100%) bottom / 100% 32% no-repeat," +                    // floor band along the bottom
+        "linear-gradient(180deg,#2e2448 0%,#271d40 100%)",                                                   // back wall (dim purple) = the backdrop
+      // cozy apartment: warm lamp on the left, cool TV glow + screen on the right
+      livingroom:
+        "radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.40) 100%)," +
+        "radial-gradient(55% 65% at 24% 40%, rgba(255,190,130,0.28), rgba(255,190,130,0) 60%) no-repeat," + // warm lamp light
+        "radial-gradient(42% 52% at 76% 52%, rgba(120,170,230,0.22), rgba(120,170,230,0) 60%) no-repeat," + // TV glow (cool)
+        "linear-gradient(180deg,#2c4c6c,#1e3350) 76% 50% / 16% 26% no-repeat," +                            // TV screen
+        "linear-gradient(#14493a,#14493a) 20% 30% / 9% 13% no-repeat," +                                    // Eagles pennant (midnight green) on the wall
+        "linear-gradient(180deg,#2e2233,#3a2b3f) bottom / 100% 30% no-repeat," +                            // floor
+        "linear-gradient(180deg,#2b2338,#241d30)",                                                          // back wall
+      // break room: cold fluorescents wash down from a ceiling light bar
+      foulk_break:
+        "radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 58%, rgba(0,0,0,0.34) 100%)," +
+        "radial-gradient(70% 55% at 50% 6%, rgba(190,225,225,0.32), rgba(190,225,225,0) 70%) no-repeat," +  // overhead cold glow
+        "linear-gradient(#d3e8e8,#d3e8e8) 50% 5% / 42% 4px no-repeat," +                                    // the fluorescent tube itself
+        "linear-gradient(180deg,#1c2c33,#24343b) bottom / 100% 30% no-repeat," +                            // tile floor
+        "linear-gradient(180deg,#23343d,#1b2930)",                                                          // cold teal wall
+      // rec room: dim and a little wrong, a dark doorway off to the side
+      foulk_rec:
+        "radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.48) 100%)," +
+        "radial-gradient(60% 60% at 60% 45%, rgba(150,120,190,0.20), rgba(150,120,190,0) 65%) no-repeat," + // faint eerie glow
+        "linear-gradient(#160f20,#160f20) 20% 40% / 12% 44% no-repeat," +                                   // dark doorway
+        "linear-gradient(180deg,#201830,#281f3a) bottom / 100% 30% no-repeat," +                            // floor
+        "linear-gradient(180deg,#2c2340,#231b34)",                                                          // wall
+      // basement boiler room: cold teal, vertical pipes, alien junction box aglow
+      foulk_boiler:
+        "radial-gradient(130% 120% at 50% 40%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%)," +
+        "radial-gradient(40% 46% at 68% 40%, rgba(90,220,190,0.30), rgba(90,220,190,0) 60%) no-repeat," +   // junction box glow
+        "linear-gradient(180deg,#3ad0b0,#1c8f78) 68% 38% / 10% 16% no-repeat," +                            // the junction box
+        "linear-gradient(#2a3a3e,#2a3a3e) 12% 0% / 4% 72% no-repeat," +                                     // pipe (left)
+        "linear-gradient(#2a3a3e,#2a3a3e) 90% 0% / 4% 72% no-repeat," +                                     // pipe (right)
+        "linear-gradient(180deg,#12242a,#183036) bottom / 100% 28% no-repeat," +                            // floor
+        "linear-gradient(180deg,#16282e,#101f24)",                                                          // cold teal wall
+      // the invasion: everything goes cold alien-green, light bleeding up from the floor
+      foulk_invaded:
+        "radial-gradient(130% 120% at 50% 40%, rgba(0,0,0,0) 42%, rgba(0,0,0,0.55) 100%)," +
+        "radial-gradient(80% 70% at 50% 40%, rgba(90,230,150,0.22), rgba(90,230,150,0) 65%) no-repeat," +   // alien wash
+        "radial-gradient(60% 45% at 50% 100%, rgba(60,200,130,0.20), rgba(0,0,0,0) 60%) no-repeat," +       // glow rising from the floor
+        "linear-gradient(180deg,#0e1f22,#123029) bottom / 100% 30% no-repeat," +                            // floor
+        "linear-gradient(180deg,#132924,#0d1d20)",                                                          // alien wall
+      // neon-dark barcade: pink and cyan signs bleeding into the dark
+      barcade:
+        "radial-gradient(130% 120% at 50% 45%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)," +
+        "radial-gradient(45% 55% at 22% 38%, rgba(255,80,180,0.28), rgba(255,80,180,0) 60%) no-repeat," +   // pink neon glow
+        "radial-gradient(45% 55% at 78% 42%, rgba(80,220,255,0.26), rgba(80,220,255,0) 60%) no-repeat," +   // cyan neon glow
+        "linear-gradient(#ff5ab4,#ff5ab4) 22% 26% / 14% 3px no-repeat," +                                   // pink sign bar
+        "linear-gradient(#5adcff,#5adcff) 78% 30% / 12% 3px no-repeat," +                                   // cyan sign bar
+        "linear-gradient(180deg,#0e0b18,#141024) bottom / 100% 30% no-repeat," +                            // floor
+        "linear-gradient(180deg,#141020,#0d0a16)",                                                          // near-black wall
+      // inside the car at dusk: dusk sky through the windshield, dark dash below, radio aglow
+      car_radio:
+        "radial-gradient(120% 130% at 50% 28%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.60) 100%)," +                // car-interior frame
+        "radial-gradient(50% 42% at 50% 92%, rgba(255,150,90,0.26), rgba(255,150,90,0) 60%) no-repeat," +   // dashboard/radio glow
+        "linear-gradient(180deg,#15121e,#0c0a12) bottom / 100% 40% no-repeat," +                            // dashboard
+        "linear-gradient(180deg,#3a3f6a 0%,#7a5a72 60%,#c98a5a 100%) 50% 0% / 86% 58% no-repeat," +         // windshield: dusk sky
+        "linear-gradient(180deg,#1a1626,#12101c)",                                                          // interior backdrop
+      // Nanu's Chicken: amber fast-food warmth, bright menu light up top, counter below
+      nanus:
+        "radial-gradient(130% 110% at 50% 45%, rgba(0,0,0,0) 58%, rgba(0,0,0,0.34) 100%)," +
+        "radial-gradient(80% 80% at 50% 42%, rgba(255,180,80,0.30), rgba(255,180,80,0) 65%) no-repeat," +   // warm amber glow
+        "linear-gradient(180deg, rgba(255,200,120,0.32), rgba(255,200,120,0)) top / 100% 24% no-repeat," +  // lit menu board up top
+        "linear-gradient(180deg,#5a3a18,#3f2810) bottom / 100% 30% no-repeat," +                            // counter
+        "linear-gradient(180deg,#5a3a1a,#3a2410)",                                                          // warm wall
+      // concert stage: two colored spotlights from above, haze, glossy dark floor
+      stage:
+        "radial-gradient(130% 120% at 50% 45%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.60) 100%)," +
+        "radial-gradient(35% 72% at 35% 0%, rgba(255,220,150,0.26), rgba(255,220,150,0) 60%) no-repeat," +  // warm spotlight (left)
+        "radial-gradient(35% 72% at 65% 0%, rgba(220,90,200,0.24), rgba(220,90,200,0) 60%) no-repeat," +    // magenta spotlight (right)
+        "radial-gradient(60% 50% at 50% 30%, rgba(120,90,200,0.18), rgba(0,0,0,0) 65%) no-repeat," +        // purple haze
+        "linear-gradient(180deg,#0c0c16,#15121f) bottom / 100% 26% no-repeat," +                            // stage floor
+        "linear-gradient(180deg,#0d0d16,#08080f)"                                                           // back wall
     };
 
     // PAL: single-letter codes -> the actual pixel colors. The sprite maps below
